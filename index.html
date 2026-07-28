@@ -63,10 +63,7 @@ body { background:#1a1a2e; color:#e0e0e0; min-height:100vh; }
 .card.atrasado { border-left-color:#ef4444; }
 .card.saldo { border-left-color:#3b82f6; }
 
-.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
-@media(max-width:768px){ .charts-row { grid-template-columns:1fr; } }
-.chart-box { background:#1e1e32; border-radius:12px; padding:20px; }
-.chart-box h3 { font-size:14px; color:#888; margin-bottom:16px; }
+
 
 .filters { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
 .filters select, .filters input {
@@ -358,7 +355,6 @@ async function carregarDados() {
     if (dataArr.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:30px;">Nenhuma conta encontrada</td></tr>';
       atualizarCards([]);
-      atualizarGraficos([]);
       return;
     }
 
