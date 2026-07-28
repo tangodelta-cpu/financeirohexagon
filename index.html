@@ -51,6 +51,19 @@ body { background:#1a1a2e; color:#e0e0e0; min-height:100vh; }
 
 .container { max-width:1200px; margin:0 auto; padding:20px; }
 
+/* Abas */
+.abas {
+  display:flex; gap:8px; margin-bottom:24px;
+}
+.aba-btn {
+  padding:10px 24px; border-radius:24px; border:none; font-size:15px; font-weight:600;
+  cursor:pointer; transition:all .2s; background:#252542; color:#888;
+}
+.aba-btn:hover { background:#2d2d4a; color:#ccc; }
+.aba-btn.ativo { background:#f97316; color:#fff; }
+.aba-btn.ativo:hover { background:#ea580c; }
+
+/* Cards */
 .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:24px; }
 .card {
   background:#1e1e32; border-radius:12px; padding:20px; border-left:4px solid #f97316;
@@ -62,8 +75,9 @@ body { background:#1a1a2e; color:#e0e0e0; min-height:100vh; }
 .card.pago { border-left-color:#22c55e; }
 .card.atrasado { border-left-color:#ef4444; }
 .card.saldo { border-left-color:#3b82f6; }
-
-
+.card.recebido { border-left-color:#22c55e; }
+.card.vencido { border-left-color:#ef4444; }
+.card.a-receber { border-left-color:#f97316; }
 
 .filters { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
 .filters select, .filters input {
@@ -81,6 +95,9 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
 .status-badge.pendente { background:#f9731620; color:#f97316; }
 .status-badge.pago { background:#22c55e20; color:#22c55e; }
 .status-badge.atrasado { background:#ef444420; color:#ef4444; }
+.status-badge.recebido { background:#22c55e20; color:#22c55e; }
+.status-badge.a_receber { background:#f9731620; color:#f97316; }
+.status-badge.vencido { background:#ef444420; color:#ef4444; }
 
 .btn-novo {
   background:#f97316; color:#fff; border:none; padding:10px 20px; border-radius:8px;
@@ -88,6 +105,20 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
 }
 .btn-novo:hover { background:#ea580c; }
 
+/* Ações nas tabelas */
+.btn-acao {
+  border:none; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600;
+  cursor:pointer; transition:all .2s; margin-right:4px;
+}
+.btn-acao-pagar { background:#22c55e; color:#fff; }
+.btn-acao-pagar:hover { background:#16a34a; }
+.btn-acao-editar { background:#f97316; color:#fff; }
+.btn-acao-editar:hover { background:#ea580c; }
+.btn-acao-receber { background:#22c55e; color:#fff; }
+.btn-acao-receber:hover { background:#16a34a; }
+.btn-acao:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* Modal */
 .modal-overlay {
   display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6);
   align-items:center; justify-content:center; z-index:100;
@@ -110,9 +141,15 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
 .modal .btn-save:hover { background:#ea580c; }
 .modal .btn-cancel { background:transparent; color:#888; border:1px solid #333; }
 .modal .btn-cancel:hover { background:#252542; }
+.modal .btn-pagar { background:#22c55e; color:#fff; border:none; }
+.modal .btn-pagar:hover { background:#16a34a; }
 
 .loading { text-align:center; padding:40px; color:#888; }
 .error-msg { color:#ef4444; text-align:center; padding:20px; }
+
+/* Aba content */
+.aba-content { display:none; }
+.aba-content.ativo { display:block; }
 </style>
 </head>
 <body>
@@ -140,37 +177,66 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
   </div>
 
   <div class="container">
-    <div class="cards" id="cards">
-      <div class="card pendente"><h3>A Pagar</h3><div class="value" id="card-pendente">—</div></div>
-      <div class="card pago"><h3>Pago no Mês</h3><div class="value" id="card-pago">—</div></div>
-      <div class="card atrasado"><h3>Atrasado</h3><div class="value" id="card-atrasado">—</div></div>
-      <div class="card saldo"><h3>Total Registrado</h3><div class="value" id="card-total">—</div></div>
+    <!-- Abas de navegação -->
+    <div class="abas">
+      <button class="aba-btn ativo" data-aba="pagar" onclick="mudarAba('pagar')">📋 A Pagar</button>
+      <button class="aba-btn" data-aba="receber" onclick="mudarAba('receber')">📄 A Receber</button>
     </div>
 
-    <button class="btn-novo" onclick="abrirModal()">+ Nova Conta</button>
+    <!-- Conteúdo: A Pagar -->
+    <div class="aba-content ativo" id="aba-pagar">
+      <div class="cards" id="cards-pagar">
+        <div class="card pendente"><h3>A Pagar</h3><div class="value" id="card-pendente">—</div></div>
+        <div class="card pago"><h3>Pago no Mês</h3><div class="value" id="card-pago">—</div></div>
+        <div class="card atrasado"><h3>Atrasado</h3><div class="value" id="card-atrasado">—</div></div>
+        <div class="card saldo"><h3>Total Registrado</h3><div class="value" id="card-total">—</div></div>
+      </div>
 
-    <div class="filters">
-      <select id="filtro-status" onchange="carregarDados()">
-        <option value="">Todos os status</option>
-        <option value="pendente">Pendentes</option>
-        <option value="pago">Pagos</option>
-        <option value="atrasado">Atrasados</option>
-      </select>
-      <input type="month" id="filtro-mes" onchange="carregarDados()">
-      <input type="text" id="filtro-busca" placeholder="Buscar conta..." oninput="carregarDados()">
+      <button class="btn-novo" onclick="abrirModal()">+ Nova Conta</button>
+
+      <div class="filters">
+        <select id="filtro-status" onchange="carregarDados()">
+          <option value="">Todos os status</option>
+          <option value="pendente">Pendentes</option>
+          <option value="pago">Pagos</option>
+          <option value="atrasado">Atrasados</option>
+        </select>
+        <input type="month" id="filtro-mes" onchange="carregarDados()">
+        <input type="text" id="filtro-busca" placeholder="Buscar conta..." oninput="carregarDados()">
+      </div>
+
+      <div id="loading-indicator" class="loading">Carregando...</div>
+      <table id="tabela-contas" style="display:none">
+        <thead>
+          <tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Categoria</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="tbody-contas"></tbody>
+      </table>
     </div>
 
-    <div id="loading-indicator" class="loading">Carregando...</div>
-    <table id="tabela-contas" style="display:none">
-      <thead>
-        <tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Categoria</th><th>Status</th></tr>
-      </thead>
-      <tbody id="tbody-contas"></tbody>
-    </table>
+    <!-- Conteúdo: A Receber -->
+    <div class="aba-content" id="aba-receber">
+      <div class="cards" id="cards-receber">
+        <div class="card a-receber"><h3>A Receber</h3><div class="value" id="card-a-receber">—</div></div>
+        <div class="card recebido"><h3>Recebido no Mês</h3><div class="value" id="card-recebido-mes">—</div></div>
+        <div class="card vencido"><h3>Vencido</h3><div class="value" id="card-vencido">—</div></div>
+        <div class="card saldo"><h3>Total Receber</h3><div class="value" id="card-total-receber">—</div></div>
+      </div>
+
+      <button class="btn-novo" onclick="abrirModalNovoRecebimento()">+ Novo Recebimento</button>
+
+      <div id="loading-indicator-receber" class="loading">Carregando...</div>
+      <table id="tabela-recebimentos" style="display:none">
+        <thead>
+          <tr><th>Nº Nota</th><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr>
+        </thead>
+        <tbody id="tbody-recebimentos"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
-<!-- Modal Nova Conta -->
+<!-- Modal Nova Conta (Pagar) -->
 <div class="modal-overlay" id="modal-overlay">
   <div class="modal">
     <h2 id="modal-title">Nova Conta</h2>
@@ -193,10 +259,83 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
   </div>
 </div>
 
+<!-- Modal Pagamento (Pagar) -->
+<div class="modal-overlay" id="modal-pagamento-overlay">
+  <div class="modal">
+    <h2>✅ Confirmar Pagamento</h2>
+    <p style="color:#ccc;margin-bottom:16px;" id="pagamento-descricao">—</p>
+    <label>Data de Pagamento</label>
+    <input type="date" id="modal-pagamento-data">
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="fecharModalPagamento()">Cancelar</button>
+      <button class="btn-pagar" onclick="confirmarPagamento()">✅ Confirmar Pagamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Edição (Pagar) -->
+<div class="modal-overlay" id="modal-edicao-overlay">
+  <div class="modal">
+    <h2>✏️ Editar Conta</h2>
+    <label>Descrição</label>
+    <input type="text" id="editar-descricao" placeholder="Ex: Energia CELESC">
+    <label>Valor (R$)</label>
+    <input type="number" step="0.01" id="editar-valor" placeholder="850,00">
+    <label>Data de Vencimento</label>
+    <input type="date" id="editar-vencimento">
+    <label>Categoria</label>
+    <select id="editar-categoria"></select>
+    <label>Observação</label>
+    <textarea id="editar-obs" rows="2"></textarea>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="fecharModalEdicao()">Cancelar</button>
+      <button class="btn-save" onclick="salvarEdicao()">💾 Salvar Alterações</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Recebimento -->
+<div class="modal-overlay" id="modal-recebimento-overlay">
+  <div class="modal">
+    <h2>📄 Novo Recebimento</h2>
+    <label>Número da Nota</label>
+    <input type="text" id="rec-numero-nota" placeholder="Ex: NF-00123">
+    <label>Descrição</label>
+    <input type="text" id="rec-descricao" placeholder="Descrição do serviço">
+    <label>Valor (R$)</label>
+    <input type="number" step="0.01" id="rec-valor" placeholder="5000,00">
+    <label>Data de Vencimento</label>
+    <input type="date" id="rec-vencimento">
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="fecharModalNovoRecebimento()">Cancelar</button>
+      <button class="btn-save" onclick="salvarRecebimento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Recebimento -->
+<div class="modal-overlay" id="modal-recebido-overlay">
+  <div class="modal">
+    <h2>✅ Confirmar Recebimento</h2>
+    <p style="color:#ccc;margin-bottom:16px;" id="recebido-descricao">—</p>
+    <label>Data de Recebimento</label>
+    <input type="date" id="modal-recebido-data">
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="fecharModalRecebido()">Cancelar</button>
+      <button class="btn-pagar" onclick="confirmarRecebimento()">✅ Confirmar Recebimento</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Config Supabase ──
 const SUPABASE_URL = 'https://ibcjuyvaygavvvbyslmt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2p1eXZheWdhdnZ2YnlzbG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDMzNDIsImV4cCI6MjEwMDgxOTM0Mn0.8ukYMfQ8Ef-prDdtyjV7PCDp8ocih1pacW1Yr6CxnXM';
+
+// ── Estado global ──
+let contaEditandoId = null;
+let contaPagandoId = null;
+let recebimentoRecebendoId = null;
 
 // ── Helpers ──
 function headersAnon() {
@@ -227,12 +366,28 @@ async function supabaseFetch(path, options = {}) {
     } catch (_) {}
     throw new Error(errorMsg);
   }
-  // Some endpoints (DELETE, etc.) return 204 with no body
   const contentType = res.headers.get('content-type') || '';
   if (res.status === 204 || !contentType.includes('application/json')) {
     return null;
   }
   return await res.json();
+}
+
+// ── Abas ──
+function mudarAba(aba) {
+  try {
+    document.querySelectorAll('.aba-btn').forEach(b => b.classList.remove('ativo'));
+    document.querySelectorAll('.aba-content').forEach(c => c.classList.remove('ativo'));
+    document.querySelector('.aba-btn[data-aba="' + aba + '"]').classList.add('ativo');
+    document.getElementById('aba-' + aba).classList.add('ativo');
+    if (aba === 'receber') {
+      carregarRecebimentos();
+    } else {
+      carregarDados();
+    }
+  } catch (e) {
+    console.error('Exceção em mudarAba:', e);
+  }
 }
 
 // ── Auth ──
@@ -266,6 +421,7 @@ async function login() {
 
     await carregarDados();
     await carregarCategorias();
+    await carregarCategoriasEdicao();
   } catch (e) {
     const errorEl = document.getElementById('login-error');
     errorEl.textContent = e.message || 'Erro ao fazer login';
@@ -289,7 +445,6 @@ async function checkSession() {
   try {
     const token = sessionStorage.getItem('supabase_token');
     if (token) {
-      // Validate token by trying to get user info
       const userData = await supabaseFetch('/auth/v1/user', {
         method: 'GET',
         headers: headersAuth()
@@ -302,6 +457,7 @@ async function checkSession() {
         document.getElementById('filtro-mes').value = hoje.toISOString().slice(0, 7);
         await carregarDados();
         await carregarCategorias();
+        await carregarCategoriasEdicao();
       }
     }
   } catch (e) {
@@ -311,14 +467,13 @@ async function checkSession() {
   }
 }
 
-// ── Dados ──
+// ── Dados (Pagar) ──
 async function carregarDados() {
   document.getElementById('loading-indicator').style.display = 'block';
   document.getElementById('tabela-contas').style.display = 'none';
   document.getElementById('tbody-contas').innerHTML = '';
 
   try {
-    // LEFT JOIN (sem !inner) — se categoria_id for NULL ou orfão, ainda retorna o pagamento
     let path = '/rest/v1/pagamentos?select=*,categorias(nome,cor_hex)&order=data_vencimento.desc';
 
     const status = document.getElementById('filtro-status').value;
@@ -353,7 +508,7 @@ async function carregarDados() {
     tbody.innerHTML = '';
 
     if (dataArr.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:30px;">Nenhuma conta encontrada</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:30px;">Nenhuma conta encontrada</td></tr>';
       atualizarCards([]);
       return;
     }
@@ -365,12 +520,18 @@ async function carregarDados() {
       const cor = c.categorias?.cor_hex || '#888';
       const catNome = c.categorias?.nome || '—';
       const tr = document.createElement('tr');
+      const podePagar = statusReal === 'pendente' || statusReal === 'atrasado';
+      const podeEditar = statusReal !== 'pago';
       tr.innerHTML = `
         <td><strong>${c.descricao}</strong></td>
         <td style="color:#f97316;font-weight:600;">R$ ${Number(c.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
         <td>${new Date(c.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
         <td><span style="color:${cor}">●</span> ${catNome}</td>
         <td><span class="status-badge ${statusReal}">${statusReal}</span></td>
+        <td>
+          ${podePagar ? `<button class="btn-acao btn-acao-pagar" onclick="abrirModalPagamento(${c.id},'${c.descricao.replace(/'/g,"\\'")}')">✅ Pagar</button>` : '<button class="btn-acao btn-acao-pagar" disabled>✅ Pagar</button>'}
+          ${podeEditar ? `<button class="btn-acao btn-acao-editar" onclick="abrirModalEdicao(${c.id})">✏️ Editar</button>` : '<button class="btn-acao btn-acao-editar" disabled>✏️ Editar</button>'}
+        </td>
       `;
       tbody.appendChild(tr);
     });
@@ -379,10 +540,9 @@ async function carregarDados() {
   } catch (e) {
     console.error('Exceção em carregarDados:', e);
     const tbody = document.getElementById('tbody-contas');
-    tbody.innerHTML = `<tr><td colspan="5" class="error-msg">Erro inesperado: ${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="error-msg">Erro inesperado: ${e.message}</td></tr>`;
     document.getElementById('tabela-contas').style.display = 'table';
   } finally {
-    // GARANTIA: loading-indicator SEMPRE desaparece, em caso de sucesso OU erro
     document.getElementById('loading-indicator').style.display = 'none';
   }
 }
@@ -415,14 +575,30 @@ async function carregarCategorias() {
     const sel = document.getElementById('modal-categoria');
     sel.innerHTML = '<option value="">Selecione...</option>';
     (data || []).forEach(c => {
-      sel.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+      sel.innerHTML += '<option value="' + c.id + '">' + c.nome + '</option>';
     });
   } catch (e) {
     console.error('Exceção ao carregar categorias:', e);
   }
 }
 
-// ── Modal ──
+async function carregarCategoriasEdicao() {
+  try {
+    const data = await supabaseFetch('/rest/v1/categorias?select=*&order=nome', {
+      method: 'GET',
+      headers: headersAuth()
+    });
+    const sel = document.getElementById('editar-categoria');
+    sel.innerHTML = '<option value="">Selecione...</option>';
+    (data || []).forEach(c => {
+      sel.innerHTML += '<option value="' + c.id + '">' + c.nome + '</option>';
+    });
+  } catch (e) {
+    console.error('Exceção ao carregar categorias de edição:', e);
+  }
+}
+
+// ── Modal Nova Conta ──
 function abrirModal() {
   document.getElementById('modal-title').textContent = 'Nova Conta';
   document.getElementById('modal-descricao').value = '';
@@ -452,7 +628,6 @@ async function salvarConta() {
       return;
     }
 
-    // Buscar user_id via REST API
     let userId = null;
     try {
       const userData = await supabaseFetch('/auth/v1/user', {
@@ -464,7 +639,6 @@ async function salvarConta() {
       console.warn('Não foi possível obter user_id');
     }
 
-    // Criar fornecedor se informado
     let fornecedor_id = null;
     if (fornecedorNome) {
       try {
@@ -501,6 +675,297 @@ async function salvarConta() {
   } catch (e) {
     console.error('Exceção ao salvar conta:', e);
     alert('Erro ao salvar: ' + e.message);
+  }
+}
+
+// ── Modal Pagamento ──
+function abrirModalPagamento(id, descricao) {
+  try {
+    contaPagandoId = id;
+    document.getElementById('pagamento-descricao').textContent = 'Conta: ' + descricao;
+    document.getElementById('modal-pagamento-data').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('modal-pagamento-overlay').classList.add('active');
+  } catch (e) {
+    console.error('Exceção em abrirModalPagamento:', e);
+  }
+}
+
+function fecharModalPagamento() {
+  document.getElementById('modal-pagamento-overlay').classList.remove('active');
+  contaPagandoId = null;
+}
+
+async function confirmarPagamento() {
+  try {
+    const id = contaPagandoId;
+    const dataPagamento = document.getElementById('modal-pagamento-data').value;
+    if (!id || !dataPagamento) {
+      alert('Selecione a data de pagamento');
+      return;
+    }
+    await supabaseFetch('/rest/v1/pagamentos?id=eq.' + id, {
+      method: 'PATCH',
+      headers: headersAuth(),
+      body: JSON.stringify({
+        status: 'pago',
+        data_pagamento: dataPagamento
+      })
+    });
+    fecharModalPagamento();
+    await carregarDados();
+  } catch (e) {
+    console.error('Exceção em confirmarPagamento:', e);
+    alert('Erro ao confirmar pagamento: ' + e.message);
+  }
+}
+
+// ── Modal Edição ──
+async function abrirModalEdicao(id) {
+  try {
+    const data = await supabaseFetch('/rest/v1/pagamentos?id=eq.' + id + '&select=*', {
+      method: 'GET',
+      headers: headersAuth()
+    });
+    const conta = Array.isArray(data) && data.length > 0 ? data[0] : null;
+    if (!conta) {
+      alert('Conta não encontrada');
+      return;
+    }
+    contaEditandoId = id;
+    document.getElementById('editar-descricao').value = conta.descricao || '';
+    document.getElementById('editar-valor').value = conta.valor || '';
+    document.getElementById('editar-vencimento').value = conta.data_vencimento || '';
+    document.getElementById('editar-categoria').value = conta.categoria_id || '';
+    document.getElementById('editar-obs').value = conta.observacao || '';
+    document.getElementById('modal-edicao-overlay').classList.add('active');
+  } catch (e) {
+    console.error('Exceção em abrirModalEdicao:', e);
+    alert('Erro ao carregar dados da conta: ' + e.message);
+  }
+}
+
+function fecharModalEdicao() {
+  document.getElementById('modal-edicao-overlay').classList.remove('active');
+  contaEditandoId = null;
+}
+
+async function salvarEdicao() {
+  try {
+    const id = contaEditandoId;
+    const descricao = document.getElementById('editar-descricao').value.trim();
+    const valor = parseFloat(document.getElementById('editar-valor').value);
+    const vencimento = document.getElementById('editar-vencimento').value;
+    const categoria_id = document.getElementById('editar-categoria').value || null;
+    const observacao = document.getElementById('editar-obs').value.trim();
+
+    if (!descricao || !valor || !vencimento) {
+      alert('Preencha descrição, valor e vencimento');
+      return;
+    }
+
+    await supabaseFetch('/rest/v1/pagamentos?id=eq.' + id, {
+      method: 'PATCH',
+      headers: headersAuth(),
+      body: JSON.stringify({
+        descricao,
+        valor,
+        data_vencimento: vencimento,
+        categoria_id,
+        observacao
+      })
+    });
+
+    fecharModalEdicao();
+    await carregarDados();
+  } catch (e) {
+    console.error('Exceção em salvarEdicao:', e);
+    alert('Erro ao salvar alterações: ' + e.message);
+  }
+}
+
+// ════════════════════════════════════════
+// ── RECEBIMENTOS ──
+// ════════════════════════════════════════
+
+async function carregarRecebimentos() {
+  document.getElementById('loading-indicator-receber').style.display = 'block';
+  document.getElementById('tabela-recebimentos').style.display = 'none';
+  document.getElementById('tbody-recebimentos').innerHTML = '';
+
+  try {
+    const data = await supabaseFetch('/rest/v1/recebimentos?select=*&order=data_vencimento.desc', {
+      method: 'GET',
+      headers: headersAuth()
+    });
+
+    const dataArr = Array.isArray(data) ? data : [];
+
+    document.getElementById('tabela-recebimentos').style.display = 'table';
+    const tbody = document.getElementById('tbody-recebimentos');
+    tbody.innerHTML = '';
+
+    if (dataArr.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:30px;">Nenhum recebimento encontrado</td></tr>';
+      atualizarCardsReceber([]);
+      return;
+    }
+
+    dataArr.forEach(r => {
+      const venc = new Date(r.data_vencimento + 'T12:00:00');
+      const hoje = new Date();
+      const statusReal = (!r.data_recebimento && venc < hoje) ? 'vencido' : (r.status || 'a_receber');
+      const podeReceber = statusReal === 'a_receber' || statusReal === 'vencido';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${r.numero_nota || '—'}</strong></td>
+        <td>${r.descricao || '—'}</td>
+        <td style="color:#f97316;font-weight:600;">R$ ${Number(r.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+        <td>${new Date(r.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+        <td><span class="status-badge ${statusReal}">${statusReal === 'a_receber' ? 'A Receber' : statusReal === 'vencido' ? 'Vencido' : 'Recebido'}</span></td>
+        <td>
+          ${podeReceber ? `<button class="btn-acao btn-acao-receber" onclick="abrirModalRecebido(${r.id},'${(r.descricao || '—').replace(/'/g,"\\'")}')">✅ Recebido</button>` : '<button class="btn-acao btn-acao-receber" disabled>✅ Recebido</button>'}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    atualizarCardsReceber(dataArr);
+  } catch (e) {
+    console.error('Exceção em carregarRecebimentos:', e);
+    const tbody = document.getElementById('tbody-recebimentos');
+    tbody.innerHTML = '<tr><td colspan="6" class="error-msg">Erro inesperado: ' + e.message + '</td></tr>';
+    document.getElementById('tabela-recebimentos').style.display = 'table';
+  } finally {
+    document.getElementById('loading-indicator-receber').style.display = 'none';
+  }
+}
+
+function atualizarCardsReceber(data) {
+  if (!Array.isArray(data)) data = [];
+  let aReceber = 0, recebidoMes = 0, vencido = 0, total = 0;
+  const hoje = new Date();
+  const mesAtual = hoje.getMonth();
+  const anoAtual = hoje.getFullYear();
+  data.forEach(r => {
+    const venc = new Date(r.data_vencimento + 'T12:00:00');
+    const statusReal = (!r.data_recebimento && venc < hoje) ? 'vencido' : (r.status || 'a_receber');
+    total += Number(r.valor);
+    if (statusReal === 'a_receber') {
+      aReceber += Number(r.valor);
+    } else if (statusReal === 'recebido') {
+      // Verificar se foi recebido no mês atual
+      if (r.data_recebimento) {
+        const dataRec = new Date(r.data_recebimento + 'T12:00:00');
+        if (dataRec.getMonth() === mesAtual && dataRec.getFullYear() === anoAtual) {
+          recebidoMes += Number(r.valor);
+        }
+      }
+    } else if (statusReal === 'vencido') {
+      vencido += Number(r.valor);
+    }
+  });
+  document.getElementById('card-a-receber').textContent = 'R$ ' + aReceber.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  document.getElementById('card-recebido-mes').textContent = 'R$ ' + recebidoMes.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  document.getElementById('card-vencido').textContent = 'R$ ' + vencido.toLocaleString('pt-BR', {minimumFractionDigits:2});
+  document.getElementById('card-total-receber').textContent = 'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+}
+
+// ── Modal Novo Recebimento ──
+function abrirModalNovoRecebimento() {
+  document.getElementById('rec-numero-nota').value = '';
+  document.getElementById('rec-descricao').value = '';
+  document.getElementById('rec-valor').value = '';
+  document.getElementById('rec-vencimento').value = '';
+  document.getElementById('modal-recebimento-overlay').classList.add('active');
+}
+
+function fecharModalNovoRecebimento() {
+  document.getElementById('modal-recebimento-overlay').classList.remove('active');
+}
+
+async function salvarRecebimento() {
+  try {
+    const numero_nota = document.getElementById('rec-numero-nota').value.trim();
+    const descricao = document.getElementById('rec-descricao').value.trim();
+    const valor = parseFloat(document.getElementById('rec-valor').value);
+    const data_vencimento = document.getElementById('rec-vencimento').value;
+
+    if (!numero_nota || !descricao || !valor || !data_vencimento) {
+      alert('Preencha número da nota, descrição, valor e vencimento');
+      return;
+    }
+
+    let userId = null;
+    try {
+      const userData = await supabaseFetch('/auth/v1/user', {
+        method: 'GET',
+        headers: headersAuth()
+      });
+      userId = userData?.id || null;
+    } catch (_) {
+      console.warn('Não foi possível obter user_id');
+    }
+
+    await supabaseFetch('/rest/v1/recebimentos', {
+      method: 'POST',
+      headers: headersAuth(),
+      body: JSON.stringify({
+        user_id: userId,
+        numero_nota,
+        descricao,
+        valor,
+        data_vencimento,
+        cliente: 'Sacyr',
+        status: 'a_receber'
+      })
+    });
+
+    fecharModalNovoRecebimento();
+    await carregarRecebimentos();
+  } catch (e) {
+    console.error('Exceção ao salvar recebimento:', e);
+    alert('Erro ao salvar recebimento: ' + e.message);
+  }
+}
+
+// ── Modal Confirmar Recebimento ──
+function abrirModalRecebido(id, descricao) {
+  try {
+    recebimentoRecebendoId = id;
+    document.getElementById('recebido-descricao').textContent = 'Recebimento: ' + descricao;
+    document.getElementById('modal-recebido-data').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('modal-recebido-overlay').classList.add('active');
+  } catch (e) {
+    console.error('Exceção em abrirModalRecebido:', e);
+  }
+}
+
+function fecharModalRecebido() {
+  document.getElementById('modal-recebido-overlay').classList.remove('active');
+  recebimentoRecebendoId = null;
+}
+
+async function confirmarRecebimento() {
+  try {
+    const id = recebimentoRecebendoId;
+    const dataRecebimento = document.getElementById('modal-recebido-data').value;
+    if (!id || !dataRecebimento) {
+      alert('Selecione a data de recebimento');
+      return;
+    }
+    await supabaseFetch('/rest/v1/recebimentos?id=eq.' + id, {
+      method: 'PATCH',
+      headers: headersAuth(),
+      body: JSON.stringify({
+        status: 'recebido',
+        data_recebimento: dataRecebimento
+      })
+    });
+    fecharModalRecebido();
+    await carregarRecebimentos();
+  } catch (e) {
+    console.error('Exceção em confirmarRecebimento:', e);
+    alert('Erro ao confirmar recebimento: ' + e.message);
   }
 }
 
