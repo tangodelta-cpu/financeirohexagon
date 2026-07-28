@@ -239,11 +239,11 @@ async function checkSession() {
   if (session) mostrarDashboard();
 }
 
-function mostrarDashboard() {
+async function mostrarDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
-  const user = supabaseClient.auth.getUser();
-  document.getElementById('user-email').textContent = user.email || '';
+  const { data: { user } } = await supabaseClient.auth.getUser();
+  document.getElementById('user-email').textContent = user?.email || '';
   const hoje = new Date();
   document.getElementById('filtro-mes').value = hoje.toISOString().slice(0,7);
   carregarDados();
