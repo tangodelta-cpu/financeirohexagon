@@ -207,7 +207,7 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
 // ── Config Supabase ──
 const SUPABASE_URL = 'https://ibcjuyvaygavvvbyslmt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2p1eXZheWdhdnZ2YnlzbG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDMzNDIsImV4cCI6MjEwMDgxOTM0Mn0.8ukYMfQ8Ef-prDdtyjV7PCDp8ocih1pacW1Yr6CxnXM';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let chartCategoria = null;
 let chartVencimentos = null;
@@ -219,7 +219,7 @@ async function login() {
   const errorEl = document.getElementById('login-error');
   errorEl.style.display = 'none';
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) {
     errorEl.textContent = error.message;
     errorEl.style.display = 'block';
@@ -229,20 +229,20 @@ async function login() {
 }
 
 async function logout() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
 }
 
 async function checkSession() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) mostrarDashboard();
 }
 
 function mostrarDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
-  const user = supabase.auth.getUser();
+  const user = supabaseClient.auth.getUser();
   document.getElementById('user-email').textContent = user.email || '';
   const hoje = new Date();
   document.getElementById('filtro-mes').value = hoje.toISOString().slice(0,7);
@@ -255,7 +255,7 @@ async function carregarDados() {
   document.getElementById('loading-indicator').style.display = 'block';
   document.getElementById('tabela-contas').style.display = 'none';
 
-  let query = supabase.from('pagamentos').select('*, categorias!inner(nome,cor_hex)', { count: 'exact' });
+  let query = supabaseClient.from('pagamentos').select('*, categorias!inner(nome,cor_hex)', { count: 'exact' });
 
   const status = document.getElementById('filtro-status').value;
   if (status) query = query.eq('status', status);
@@ -392,7 +392,7 @@ function atualizarGraficos(data) {
 
 // ── Categorias ──
 async function carregarCategorias() {
-  const { data } = await supabase.from('categorias').select('*').order('nome');
+  const { data } = await supabaseClient.from('categorias').select('*').order('nome');
   const sel = document.getElementById('modal-categoria');
   sel.innerHTML = '<option value="">Selecione...</option>';
   (data || []).forEach(c => {
@@ -429,14 +429,14 @@ async function salvarConta() {
     return;
   }
 
-  const { data: user } = await supabase.auth.getUser();
+  const { data: user } = await supabaseClient.auth.getUser();
   let fornecedor_id = null;
   if (fornecedorNome) {
-    const { data: forn, error: errF } = await supabase.from('fornecedores').insert({ nome: fornecedorNome }).select().single();
+    const { data: forn, error: errF } = await supabaseClient.from('fornecedores').insert({ nome: fornecedorNome }).select().single();
     if (!errF && forn) fornecedor_id = forn.id;
   }
 
-  const { error } = await supabase.from('pagamentos').insert({
+  const { error } = await supabaseClient.from('pagamentos').insert({
     user_id: user.user?.id,
     descricao,
     valor,
