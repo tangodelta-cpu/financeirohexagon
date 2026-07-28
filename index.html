@@ -445,7 +445,7 @@ function atualizarGraficos(data) {
       }]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
       plugins: {
         legend: { position: 'bottom', labels: { color: '#888', padding: 12 } }
       }
@@ -474,7 +474,7 @@ function atualizarGraficos(data) {
       }]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
       scales: {
         y: { beginAtZero: true, ticks: { color:'#666', callback: v => 'R$'+v } },
         x: { ticks: { color:'#666' } }
