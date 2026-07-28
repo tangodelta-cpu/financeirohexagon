@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hexagon Finance</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,-apple-system,sans-serif; }
 body { background:#1a1a2e; color:#e0e0e0; min-height:100vh; }
@@ -151,11 +150,6 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
       <div class="card saldo"><h3>Total Registrado</h3><div class="value" id="card-total">—</div></div>
     </div>
 
-    <div class="charts-row">
-      <div class="chart-box"><h3>📊 Por Categoria</h3><canvas id="chart-categoria" height="200"></canvas></div>
-      <div class="chart-box"><h3>📅 Vencimentos do Mês</h3><canvas id="chart-vencimentos" height="200"></canvas></div>
-    </div>
-
     <button class="btn-novo" onclick="abrirModal()">+ Nova Conta</button>
 
     <div class="filters">
@@ -206,9 +200,6 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
 // ── Config Supabase ──
 const SUPABASE_URL = 'https://ibcjuyvaygavvvbyslmt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2p1eXZheWdhdnZ2YnlzbG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDMzNDIsImV4cCI6MjEwMDgxOTM0Mn0.8ukYMfQ8Ef-prDdtyjV7PCDp8ocih1pacW1Yr6CxnXM';
-
-let chartCategoria = null;
-let chartVencimentos = null;
 
 // ── Helpers ──
 function headersAnon() {
@@ -295,8 +286,6 @@ function logout() {
   }
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
-  if (chartCategoria) { chartCategoria.destroy(); chartCategoria = null; }
-  if (chartVencimentos) { chartVencimentos.destroy(); chartVencimentos = null; }
 }
 
 async function checkSession() {
@@ -391,7 +380,6 @@ async function carregarDados() {
     });
 
     atualizarCards(dataArr);
-    atualizarGraficos(dataArr);
   } catch (e) {
     console.error('Exceção em carregarDados:', e);
     const tbody = document.getElementById('tbody-contas');
@@ -419,71 +407,6 @@ function atualizarCards(data) {
   document.getElementById('card-pago').textContent = 'R$ ' + pago.toLocaleString('pt-BR', {minimumFractionDigits:2});
   document.getElementById('card-atrasado').textContent = 'R$ ' + atrasado.toLocaleString('pt-BR', {minimumFractionDigits:2});
   document.getElementById('card-total').textContent = 'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits:2});
-}
-
-function atualizarGraficos(data) {
-  if (!Array.isArray(data)) data = [];
-
-  // Pizza por categoria
-  const cats = {};
-  data.forEach(c => {
-    const nome = c.categorias?.nome || 'Sem categoria';
-    const cor = c.categorias?.cor_hex || '#888';
-    if (!cats[nome]) cats[nome] = { valor: 0, cor };
-    cats[nome].valor += Number(c.valor);
-  });
-
-  if (chartCategoria) { chartCategoria.destroy(); chartCategoria = null; }
-  chartCategoria = new Chart(document.getElementById('chart-categoria'), {
-    type: 'doughnut',
-    data: {
-      labels: Object.keys(cats),
-      datasets: [{
-        data: Object.values(cats).map(v => v.valor),
-        backgroundColor: Object.values(cats).map(v => v.cor),
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom', labels: { color: '#888', padding: 12 } }
-      }
-    }
-  });
-
-  // Barras de vencimentos (exclui pagos)
-  const dias = {};
-  data.forEach(c => {
-    if (c.status === 'pago') return;
-    const d = c.data_vencimento;
-    dias[d] = (dias[d] || 0) + Number(c.valor);
-  });
-
-  if (chartVencimentos) { chartVencimentos.destroy(); chartVencimentos = null; }
-  const diasOrdenados = Object.keys(dias).sort();
-  chartVencimentos = new Chart(document.getElementById('chart-vencimentos'), {
-    type: 'bar',
-    data: {
-      labels: diasOrdenados.map(d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')),
-      datasets: [{
-        label: 'Valor a pagar',
-        data: diasOrdenados.map(d => dias[d]),
-        backgroundColor: '#f97316',
-        borderRadius: 6
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: { beginAtZero: true, ticks: { color:'#666', callback: v => 'R$'+v } },
-        x: { ticks: { color:'#666' } }
-      },
-      plugins: {
-        legend: { display: false }
-      }
-    }
-  });
 }
 
 // ── Categorias ──
