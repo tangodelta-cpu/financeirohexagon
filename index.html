@@ -204,7 +204,7 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
 </div>
 
 <script>
-// ── Config Supabase ──
+// ── Config Supabase (chave anon COMPLETA — corrigido!) ──
 const SUPABASE_URL = 'https://ibcjuyvaygavvvbyslmt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2p1eXZheWdhdnZ2YnlzbG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDMzNDIsImV4cCI6MjEwMDgxOTM0Mn0.8ukYMfQ8Ef-prDdtyjV7PCDp8ocih1pacW1Yr6CxnXM';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -214,104 +214,142 @@ let chartVencimentos = null;
 
 // ── Auth ──
 async function login() {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const errorEl = document.getElementById('login-error');
-  errorEl.style.display = 'none';
+  try {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errorEl = document.getElementById('login-error');
+    errorEl.style.display = 'none';
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) {
-    errorEl.textContent = error.message;
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      errorEl.textContent = error.message;
+      errorEl.style.display = 'block';
+      return;
+    }
+    mostrarDashboard();
+  } catch (e) {
+    const errorEl = document.getElementById('login-error');
+    errorEl.textContent = 'Erro: ' + e.message;
     errorEl.style.display = 'block';
-    return;
+    console.error('Exceção no login:', e);
   }
-  mostrarDashboard();
 }
 
 async function logout() {
-  await supabaseClient.auth.signOut();
+  try {
+    await supabaseClient.auth.signOut();
+  } catch (e) {
+    console.error('Erro no logout:', e);
+  }
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
 }
 
 async function checkSession() {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (session) mostrarDashboard();
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) mostrarDashboard();
+  } catch (e) {
+    console.error('Erro ao verificar sessão:', e);
+  }
 }
 
 async function mostrarDashboard() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'block';
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  document.getElementById('user-email').textContent = user?.email || '';
-  const hoje = new Date();
-  document.getElementById('filtro-mes').value = hoje.toISOString().slice(0,7);
-  carregarDados();
-  carregarCategorias();
+  try {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    document.getElementById('user-email').textContent = user?.email || '';
+    const hoje = new Date();
+    document.getElementById('filtro-mes').value = hoje.toISOString().slice(0,7);
+    await carregarDados();
+    await carregarCategorias();
+  } catch (e) {
+    console.error('Erro em mostrarDashboard:', e);
+  }
 }
 
 // ── Dados ──
 async function carregarDados() {
   document.getElementById('loading-indicator').style.display = 'block';
   document.getElementById('tabela-contas').style.display = 'none';
+  document.getElementById('tbody-contas').innerHTML = '';
 
-  let query = supabaseClient.from('pagamentos').select('*, categorias!inner(nome,cor_hex)', { count: 'exact' });
+  try {
+    // LEFT JOIN (sem !inner) — se categoria_id for NULL ou orfão, ainda retorna o pagamento
+    let query = supabaseClient.from('pagamentos').select('*, categorias(nome,cor_hex)', { count: 'exact' });
 
-  const status = document.getElementById('filtro-status').value;
-  if (status) query = query.eq('status', status);
+    const status = document.getElementById('filtro-status').value;
+    if (status) query = query.eq('status', status);
 
-  const mes = document.getElementById('filtro-mes').value;
-  if (mes) {
-    const inicio = mes + '-01';
-    const fim = new Date(parseInt(mes.split('-')[0]), parseInt(mes.split('-')[1]), 0).toISOString().slice(0,10);
-    query = query.gte('data_vencimento', inicio).lte('data_vencimento', fim);
+    const mes = document.getElementById('filtro-mes').value;
+    if (mes) {
+      const inicio = mes + '-01';
+      const [ano, mesNum] = mes.split('-').map(Number);
+      const ultimoDia = new Date(ano, mesNum, 0).getDate();
+      const fim = mes + '-' + String(ultimoDia).padStart(2, '0');
+      query = query.gte('data_vencimento', inicio).lte('data_vencimento', fim);
+    }
+
+    const busca = document.getElementById('filtro-busca').value.trim();
+    if (busca) query = query.ilike('descricao', `%${busca}%`);
+
+    query = query.order('data_vencimento', { ascending: false });
+
+    const { data, error } = await query;
+
+    if (error) {
+      document.getElementById('tbody-contas').innerHTML =
+        `<tr><td colspan="5" class="error-msg">Erro: ${error.message}</td></tr>`;
+      document.getElementById('tabela-contas').style.display = 'table';
+      return;
+    }
+
+    document.getElementById('tabela-contas').style.display = 'table';
+    const tbody = document.getElementById('tbody-contas');
+    tbody.innerHTML = '';
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:30px;">Nenhuma conta encontrada</td></tr>';
+      atualizarCards([]);
+      atualizarGraficos([]);
+      return;
+    }
+
+    data.forEach(c => {
+      const venc = new Date(c.data_vencimento + 'T12:00:00');
+      const hoje = new Date();
+      const statusReal = (!c.data_pagamento && venc < hoje) ? 'atrasado' : c.status;
+      const cor = c.categorias?.cor_hex || '#888';
+      const catNome = c.categorias?.nome || '—';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${c.descricao}</strong></td>
+        <td style="color:#f97316;font-weight:600;">R$ ${Number(c.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+        <td>${new Date(c.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+        <td><span style="color:${cor}">●</span> ${catNome}</td>
+        <td><span class="status-badge ${statusReal}">${statusReal}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    atualizarCards(data);
+    atualizarGraficos(data);
+  } catch (e) {
+    console.error('Exceção em carregarDados:', e);
+    document.getElementById('tbody-contas').innerHTML =
+      `<tr><td colspan="5" class="error-msg">Erro inesperado: ${e.message}</td></tr>`;
+    document.getElementById('tabela-contas').style.display = 'table';
+  } finally {
+    // GARANTIA: loading-indicator SEMPRE desaparece, em caso de sucesso OU erro
+    document.getElementById('loading-indicator').style.display = 'none';
   }
-
-  const busca = document.getElementById('filtro-busca').value.trim();
-  if (busca) query = query.ilike('descricao', `%${busca}%`);
-
-  query = query.order('data_vencimento', { ascending: false });
-
-  const { data, error } = await query;
-  document.getElementById('loading-indicator').style.display = 'none';
-
-  if (error) {
-    document.getElementById('tabela-contas').innerHTML = `<tr><td colspan="5" class="error-msg">Erro: ${error.message}</td></tr>`;
-    return;
-  }
-
-  document.getElementById('tabela-contas').style.display = 'table';
-  const tbody = document.getElementById('tbody-contas');
-  tbody.innerHTML = '';
-
-  if (!data || data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:30px;">Nenhuma conta encontrada</td></tr>';
-    atualizarCards([]);
-    return;
-  }
-
-  data.forEach(c => {
-    const venc = new Date(c.data_vencimento + 'T12:00:00');
-    const hoje = new Date();
-    const statusReal = (!c.data_pagamento && venc < hoje) ? 'atrasado' : c.status;
-    const cor = c.categorias?.cor_hex || '#888';
-    const catNome = c.categorias?.nome || '—';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong>${c.descricao}</strong></td>
-      <td style="color:#f97316;font-weight:600;">R$ ${Number(c.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-      <td>${new Date(c.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
-      <td><span style="color:${cor}">●</span> ${catNome}</td>
-      <td><span class="status-badge ${statusReal}">${statusReal}</span></td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  atualizarCards(data);
-  atualizarGraficos(data);
 }
 
 function atualizarCards(data) {
+  // Proteção contra data não ser array
+  if (!Array.isArray(data)) data = [];
+
   let pendente = 0, pago = 0, atrasado = 0, total = 0;
   const hoje = new Date();
   data.forEach(c => {
@@ -329,6 +367,9 @@ function atualizarCards(data) {
 }
 
 function atualizarGraficos(data) {
+  // Proteção contra data não ser array
+  if (!Array.isArray(data)) data = [];
+
   // Pizza por categoria
   const cats = {};
   data.forEach(c => {
@@ -392,12 +433,20 @@ function atualizarGraficos(data) {
 
 // ── Categorias ──
 async function carregarCategorias() {
-  const { data } = await supabaseClient.from('categorias').select('*').order('nome');
-  const sel = document.getElementById('modal-categoria');
-  sel.innerHTML = '<option value="">Selecione...</option>';
-  (data || []).forEach(c => {
-    sel.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-  });
+  try {
+    const { data, error } = await supabaseClient.from('categorias').select('*').order('nome');
+    if (error) {
+      console.error('Erro ao carregar categorias:', error.message);
+      return;
+    }
+    const sel = document.getElementById('modal-categoria');
+    sel.innerHTML = '<option value="">Selecione...</option>';
+    (data || []).forEach(c => {
+      sel.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+    });
+  } catch (e) {
+    console.error('Exceção ao carregar categorias:', e);
+  }
 }
 
 // ── Modal ──
@@ -417,42 +466,47 @@ function fecharModal() {
 }
 
 async function salvarConta() {
-  const descricao = document.getElementById('modal-descricao').value;
-  const valor = parseFloat(document.getElementById('modal-valor').value);
-  const vencimento = document.getElementById('modal-vencimento').value;
-  const categoria_id = document.getElementById('modal-categoria').value || null;
-  const fornecedorNome = document.getElementById('modal-fornecedor').value;
-  const observacao = document.getElementById('modal-obs').value;
+  try {
+    const descricao = document.getElementById('modal-descricao').value;
+    const valor = parseFloat(document.getElementById('modal-valor').value);
+    const vencimento = document.getElementById('modal-vencimento').value;
+    const categoria_id = document.getElementById('modal-categoria').value || null;
+    const fornecedorNome = document.getElementById('modal-fornecedor').value;
+    const observacao = document.getElementById('modal-obs').value;
 
-  if (!descricao || !valor || !vencimento) {
-    alert('Preencha descrição, valor e vencimento');
-    return;
+    if (!descricao || !valor || !vencimento) {
+      alert('Preencha descrição, valor e vencimento');
+      return;
+    }
+
+    const { data: userData } = await supabaseClient.auth.getUser();
+    let fornecedor_id = null;
+    if (fornecedorNome) {
+      const { data: forn, error: errF } = await supabaseClient.from('fornecedores').insert({ nome: fornecedorNome }).select().single();
+      if (!errF && forn) fornecedor_id = forn.id;
+    }
+
+    const { error } = await supabaseClient.from('pagamentos').insert({
+      user_id: userData.user?.id,
+      descricao,
+      valor,
+      data_vencimento: vencimento,
+      categoria_id,
+      fornecedor_id,
+      observacao,
+      status: 'pendente'
+    });
+
+    if (error) {
+      alert('Erro: ' + error.message);
+      return;
+    }
+    fecharModal();
+    await carregarDados();
+  } catch (e) {
+    console.error('Exceção ao salvar conta:', e);
+    alert('Erro inesperado: ' + e.message);
   }
-
-  const { data: user } = await supabaseClient.auth.getUser();
-  let fornecedor_id = null;
-  if (fornecedorNome) {
-    const { data: forn, error: errF } = await supabaseClient.from('fornecedores').insert({ nome: fornecedorNome }).select().single();
-    if (!errF && forn) fornecedor_id = forn.id;
-  }
-
-  const { error } = await supabaseClient.from('pagamentos').insert({
-    user_id: user.user?.id,
-    descricao,
-    valor,
-    data_vencimento: vencimento,
-    categoria_id,
-    fornecedor_id,
-    observacao,
-    status: 'pendente'
-  });
-
-  if (error) {
-    alert('Erro: ' + error.message);
-    return;
-  }
-  fecharModal();
-  carregarDados();
 }
 
 // ── Init ──
