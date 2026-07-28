@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hexagon Finance</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,-apple-system,sans-serif; }
@@ -204,13 +203,49 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
 </div>
 
 <script>
-// ── Config Supabase (chave anon COMPLETA — corrigido!) ──
+// ── Config Supabase ──
 const SUPABASE_URL = 'https://ibcjuyvaygavvvbyslmt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2p1eXZheWdhdnZ2YnlzbG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDMzNDIsImV4cCI6MjEwMDgxOTM0Mn0.8ukYMfQ8Ef-prDdtyjV7PCDp8ocih1pacW1Yr6CxnXM';
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let chartCategoria = null;
 let chartVencimentos = null;
+
+// ── Helpers ──
+function headersAnon() {
+  return {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json'
+  };
+}
+
+function headersAuth() {
+  const token = sessionStorage.getItem('supabase_token');
+  return {
+    'apikey': SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + (token || '')
+  };
+}
+
+async function supabaseFetch(path, options = {}) {
+  const url = SUPABASE_URL + path;
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    let errorMsg = 'HTTP ' + res.status;
+    try {
+      const errBody = await res.json();
+      errorMsg = errBody.message || errBody.error || errBody.msg || errorMsg;
+      if (errBody.error_description) errorMsg = errBody.error_description;
+    } catch (_) {}
+    throw new Error(errorMsg);
+  }
+  // Some endpoints (DELETE, etc.) return 204 with no body
+  const contentType = res.headers.get('content-type') || '';
+  if (res.status === 204 || !contentType.includes('application/json')) {
+    return null;
+  }
+  return await res.json();
+}
 
 // ── Auth ──
 async function login() {
@@ -220,52 +255,73 @@ async function login() {
     const errorEl = document.getElementById('login-error');
     errorEl.style.display = 'none';
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    if (error) {
-      errorEl.textContent = error.message;
-      errorEl.style.display = 'block';
-      return;
+    const body = JSON.stringify({ email, password });
+    const result = await supabaseFetch('/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      headers: headersAnon(),
+      body
+    });
+
+    if (!result.access_token) {
+      throw new Error('Falha na autenticação — token não recebido');
     }
-    mostrarDashboard();
+
+    sessionStorage.setItem('supabase_token', result.access_token);
+    sessionStorage.setItem('supabase_user_email', result.user?.email || email);
+
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('user-email').textContent = result.user?.email || email;
+
+    const hoje = new Date();
+    document.getElementById('filtro-mes').value = hoje.toISOString().slice(0, 7);
+
+    await carregarDados();
+    await carregarCategorias();
   } catch (e) {
     const errorEl = document.getElementById('login-error');
-    errorEl.textContent = 'Erro: ' + e.message;
+    errorEl.textContent = e.message || 'Erro ao fazer login';
     errorEl.style.display = 'block';
     console.error('Exceção no login:', e);
   }
 }
 
-async function logout() {
+function logout() {
   try {
-    await supabaseClient.auth.signOut();
+    sessionStorage.removeItem('supabase_token');
+    sessionStorage.removeItem('supabase_user_email');
   } catch (e) {
     console.error('Erro no logout:', e);
   }
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
+  if (chartCategoria) { chartCategoria.destroy(); chartCategoria = null; }
+  if (chartVencimentos) { chartVencimentos.destroy(); chartVencimentos = null; }
 }
 
 async function checkSession() {
   try {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) mostrarDashboard();
+    const token = sessionStorage.getItem('supabase_token');
+    if (token) {
+      // Validate token by trying to get user info
+      const userData = await supabaseFetch('/auth/v1/user', {
+        method: 'GET',
+        headers: headersAuth()
+      });
+      if (userData && userData.id) {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('user-email').textContent = userData.email || sessionStorage.getItem('supabase_user_email') || '';
+        const hoje = new Date();
+        document.getElementById('filtro-mes').value = hoje.toISOString().slice(0, 7);
+        await carregarDados();
+        await carregarCategorias();
+      }
+    }
   } catch (e) {
-    console.error('Erro ao verificar sessão:', e);
-  }
-}
-
-async function mostrarDashboard() {
-  try {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    document.getElementById('user-email').textContent = user?.email || '';
-    const hoje = new Date();
-    document.getElementById('filtro-mes').value = hoje.toISOString().slice(0,7);
-    await carregarDados();
-    await carregarCategorias();
-  } catch (e) {
-    console.error('Erro em mostrarDashboard:', e);
+    console.error('Sessão inválida ou expirada:', e);
+    sessionStorage.removeItem('supabase_token');
+    sessionStorage.removeItem('supabase_user_email');
   }
 }
 
@@ -277,10 +333,12 @@ async function carregarDados() {
 
   try {
     // LEFT JOIN (sem !inner) — se categoria_id for NULL ou orfão, ainda retorna o pagamento
-    let query = supabaseClient.from('pagamentos').select('*, categorias(nome,cor_hex)', { count: 'exact' });
+    let path = '/rest/v1/pagamentos?select=*,categorias(nome,cor_hex)&order=data_vencimento.desc';
 
     const status = document.getElementById('filtro-status').value;
-    if (status) query = query.eq('status', status);
+    if (status) {
+      path += '&status=eq.' + encodeURIComponent(status);
+    }
 
     const mes = document.getElementById('filtro-mes').value;
     if (mes) {
@@ -288,35 +346,34 @@ async function carregarDados() {
       const [ano, mesNum] = mes.split('-').map(Number);
       const ultimoDia = new Date(ano, mesNum, 0).getDate();
       const fim = mes + '-' + String(ultimoDia).padStart(2, '0');
-      query = query.gte('data_vencimento', inicio).lte('data_vencimento', fim);
+      path += '&data_vencimento=gte.' + encodeURIComponent(inicio);
+      path += '&data_vencimento=lte.' + encodeURIComponent(fim);
     }
 
     const busca = document.getElementById('filtro-busca').value.trim();
-    if (busca) query = query.ilike('descricao', `%${busca}%`);
-
-    query = query.order('data_vencimento', { ascending: false });
-
-    const { data, error } = await query;
-
-    if (error) {
-      document.getElementById('tbody-contas').innerHTML =
-        `<tr><td colspan="5" class="error-msg">Erro: ${error.message}</td></tr>`;
-      document.getElementById('tabela-contas').style.display = 'table';
-      return;
+    if (busca) {
+      path += '&descricao=ilike.' + encodeURIComponent('%' + busca + '%');
     }
+
+    const data = await supabaseFetch(path, {
+      method: 'GET',
+      headers: headersAuth()
+    });
+
+    const dataArr = Array.isArray(data) ? data : [];
 
     document.getElementById('tabela-contas').style.display = 'table';
     const tbody = document.getElementById('tbody-contas');
     tbody.innerHTML = '';
 
-    if (!data || data.length === 0) {
+    if (dataArr.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:30px;">Nenhuma conta encontrada</td></tr>';
       atualizarCards([]);
       atualizarGraficos([]);
       return;
     }
 
-    data.forEach(c => {
+    dataArr.forEach(c => {
       const venc = new Date(c.data_vencimento + 'T12:00:00');
       const hoje = new Date();
       const statusReal = (!c.data_pagamento && venc < hoje) ? 'atrasado' : c.status;
@@ -333,12 +390,12 @@ async function carregarDados() {
       tbody.appendChild(tr);
     });
 
-    atualizarCards(data);
-    atualizarGraficos(data);
+    atualizarCards(dataArr);
+    atualizarGraficos(dataArr);
   } catch (e) {
     console.error('Exceção em carregarDados:', e);
-    document.getElementById('tbody-contas').innerHTML =
-      `<tr><td colspan="5" class="error-msg">Erro inesperado: ${e.message}</td></tr>`;
+    const tbody = document.getElementById('tbody-contas');
+    tbody.innerHTML = `<tr><td colspan="5" class="error-msg">Erro inesperado: ${e.message}</td></tr>`;
     document.getElementById('tabela-contas').style.display = 'table';
   } finally {
     // GARANTIA: loading-indicator SEMPRE desaparece, em caso de sucesso OU erro
@@ -347,9 +404,7 @@ async function carregarDados() {
 }
 
 function atualizarCards(data) {
-  // Proteção contra data não ser array
   if (!Array.isArray(data)) data = [];
-
   let pendente = 0, pago = 0, atrasado = 0, total = 0;
   const hoje = new Date();
   data.forEach(c => {
@@ -367,7 +422,6 @@ function atualizarCards(data) {
 }
 
 function atualizarGraficos(data) {
-  // Proteção contra data não ser array
   if (!Array.isArray(data)) data = [];
 
   // Pizza por categoria
@@ -379,7 +433,7 @@ function atualizarGraficos(data) {
     cats[nome].valor += Number(c.valor);
   });
 
-  if (chartCategoria) chartCategoria.destroy();
+  if (chartCategoria) { chartCategoria.destroy(); chartCategoria = null; }
   chartCategoria = new Chart(document.getElementById('chart-categoria'), {
     type: 'doughnut',
     data: {
@@ -398,7 +452,7 @@ function atualizarGraficos(data) {
     }
   });
 
-  // Barras de vencimentos
+  // Barras de vencimentos (exclui pagos)
   const dias = {};
   data.forEach(c => {
     if (c.status === 'pago') return;
@@ -406,14 +460,15 @@ function atualizarGraficos(data) {
     dias[d] = (dias[d] || 0) + Number(c.valor);
   });
 
-  if (chartVencimentos) chartVencimentos.destroy();
+  if (chartVencimentos) { chartVencimentos.destroy(); chartVencimentos = null; }
+  const diasOrdenados = Object.keys(dias).sort();
   chartVencimentos = new Chart(document.getElementById('chart-vencimentos'), {
     type: 'bar',
     data: {
-      labels: Object.keys(dias).sort().map(d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')),
+      labels: diasOrdenados.map(d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')),
       datasets: [{
         label: 'Valor a pagar',
-        data: Object.keys(dias).sort().map(d => dias[d]),
+        data: diasOrdenados.map(d => dias[d]),
         backgroundColor: '#f97316',
         borderRadius: 6
       }]
@@ -434,11 +489,10 @@ function atualizarGraficos(data) {
 // ── Categorias ──
 async function carregarCategorias() {
   try {
-    const { data, error } = await supabaseClient.from('categorias').select('*').order('nome');
-    if (error) {
-      console.error('Erro ao carregar categorias:', error.message);
-      return;
-    }
+    const data = await supabaseFetch('/rest/v1/categorias?select=*&order=nome', {
+      method: 'GET',
+      headers: headersAuth()
+    });
     const sel = document.getElementById('modal-categoria');
     sel.innerHTML = '<option value="">Selecione...</option>';
     (data || []).forEach(c => {
@@ -467,45 +521,67 @@ function fecharModal() {
 
 async function salvarConta() {
   try {
-    const descricao = document.getElementById('modal-descricao').value;
+    const descricao = document.getElementById('modal-descricao').value.trim();
     const valor = parseFloat(document.getElementById('modal-valor').value);
     const vencimento = document.getElementById('modal-vencimento').value;
     const categoria_id = document.getElementById('modal-categoria').value || null;
-    const fornecedorNome = document.getElementById('modal-fornecedor').value;
-    const observacao = document.getElementById('modal-obs').value;
+    const fornecedorNome = document.getElementById('modal-fornecedor').value.trim();
+    const observacao = document.getElementById('modal-obs').value.trim();
 
     if (!descricao || !valor || !vencimento) {
       alert('Preencha descrição, valor e vencimento');
       return;
     }
 
-    const { data: userData } = await supabaseClient.auth.getUser();
+    // Buscar user_id via REST API
+    let userId = null;
+    try {
+      const userData = await supabaseFetch('/auth/v1/user', {
+        method: 'GET',
+        headers: headersAuth()
+      });
+      userId = userData?.id || null;
+    } catch (_) {
+      console.warn('Não foi possível obter user_id');
+    }
+
+    // Criar fornecedor se informado
     let fornecedor_id = null;
     if (fornecedorNome) {
-      const { data: forn, error: errF } = await supabaseClient.from('fornecedores').insert({ nome: fornecedorNome }).select().single();
-      if (!errF && forn) fornecedor_id = forn.id;
+      try {
+        const newForn = await supabaseFetch('/rest/v1/fornecedores?select=id', {
+          method: 'POST',
+          headers: headersAuth(),
+          body: JSON.stringify({ nome: fornecedorNome })
+        });
+        if (newForn && Array.isArray(newForn) && newForn.length > 0) {
+          fornecedor_id = newForn[0].id;
+        }
+      } catch (e) {
+        console.warn('Erro ao criar fornecedor:', e.message);
+      }
     }
 
-    const { error } = await supabaseClient.from('pagamentos').insert({
-      user_id: userData.user?.id,
-      descricao,
-      valor,
-      data_vencimento: vencimento,
-      categoria_id,
-      fornecedor_id,
-      observacao,
-      status: 'pendente'
+    await supabaseFetch('/rest/v1/pagamentos', {
+      method: 'POST',
+      headers: headersAuth(),
+      body: JSON.stringify({
+        user_id: userId,
+        descricao,
+        valor,
+        data_vencimento: vencimento,
+        categoria_id,
+        fornecedor_id,
+        observacao,
+        status: 'pendente'
+      })
     });
 
-    if (error) {
-      alert('Erro: ' + error.message);
-      return;
-    }
     fecharModal();
     await carregarDados();
   } catch (e) {
     console.error('Exceção ao salvar conta:', e);
-    alert('Erro inesperado: ' + e.message);
+    alert('Erro ao salvar: ' + e.message);
   }
 }
 
