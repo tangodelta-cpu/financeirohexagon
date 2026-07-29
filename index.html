@@ -79,12 +79,20 @@ body { background:#1a1a2e; color:#e0e0e0; min-height:100vh; }
 .card.vencido { border-left-color:#ef4444; }
 .card.a-receber { border-left-color:#f97316; }
 
-.filters { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
-.filters select, .filters input {
+.filters { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+.filters select, .filters input, .filters button {
   background:#252542; border:1px solid #333; color:#fff; padding:10px 14px;
   border-radius:8px; font-size:14px; outline:none;
 }
 .filters select:focus, .filters input:focus { border-color:#f97316; }
+.filters button {
+  cursor:pointer; transition:background .2s; font-weight:600;
+}
+.filters button:hover { background:#2d2d4a; }
+.filters .filter-label { color:#888; font-size:13px; margin-right:-4px; }
+.filters .date-input { width:150px; }
+.filters .sort-btn { min-width:90px; }
+.filters .group-select { min-width:150px; }
 
 table { width:100%; border-collapse:collapse; background:#1e1e32; border-radius:12px; overflow:hidden; margin-bottom:30px; }
 th { background:#252542; color:#888; padding:14px 16px; text-align:left; font-size:13px; text-transform:uppercase; letter-spacing:1px; }
@@ -150,6 +158,24 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
 /* Aba content */
 .aba-content { display:none; }
 .aba-content.ativo { display:block; }
+
+/* Agrupamento */
+.grupo-header {
+  background:#252542; color:#f97316; font-weight:700; font-size:14px; padding:10px 16px;
+  border-top:2px solid #2d2d4a; border-bottom:1px solid #2d2d4a;
+}
+.grupo-subtotal {
+  background:#1a1a2e; color:#f97316; font-weight:600; font-size:13px; padding:8px 16px;
+  text-align:right; border-top:1px solid #2d2d4a;
+}
+
+/* Tabela info amigável */
+.table-info {
+  background:#1e1e32; border-radius:12px; padding:30px; text-align:center; color:#888;
+  margin-bottom:30px; font-size:15px;
+}
+.table-info .icon { font-size:40px; margin-bottom:12px; display:block; }
+.table-info .title { font-size:18px; color:#f97316; margin-bottom:8px; }
 </style>
 </head>
 <body>
@@ -201,14 +227,24 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
           <option value="pago">Pagos</option>
           <option value="atrasado">Atrasados</option>
         </select>
-        <input type="month" id="filtro-mes" onchange="carregarDados()">
+        <input type="month" id="filtro-mes" onchange="aoMudarFiltroMes()">
+        <span class="filter-label">De</span>
+        <input type="date" class="date-input" id="filtro-data-de" onchange="carregarDados()">
+        <span class="filter-label">Até</span>
+        <input type="date" class="date-input" id="filtro-data-ate" onchange="carregarDados()">
+        <button class="sort-btn" id="btn-ordem" onclick="toggleOrdenacao()">Data ↓</button>
+        <select class="group-select" id="filtro-agrupamento" onchange="carregarDados()">
+          <option value="">Agrupar por: Nenhum</option>
+          <option value="categoria">Agrupar por: Categoria</option>
+          <option value="fornecedor">Agrupar por: Fornecedor</option>
+        </select>
         <input type="text" id="filtro-busca" placeholder="Buscar conta..." oninput="carregarDados()">
       </div>
 
       <div id="loading-indicator" class="loading">Carregando...</div>
       <table id="tabela-contas" style="display:none">
         <thead>
-          <tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Categoria</th><th>Status</th><th>Ações</th></tr>
+          <tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Categoria</th><th>Fornecedor</th><th>Status</th><th>Ações</th></tr>
         </thead>
         <tbody id="tbody-contas"></tbody>
       </table>
@@ -226,12 +262,7 @@ td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
       <button class="btn-novo" onclick="abrirModalNovoRecebimento()">+ Novo Recebimento</button>
 
       <div id="loading-indicator-receber" class="loading">Carregando...</div>
-      <table id="tabela-recebimentos" style="display:none">
-        <thead>
-          <tr><th>Nº Nota</th><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr>
-        </thead>
-        <tbody id="tbody-recebimentos"></tbody>
-      </table>
+      <div id="tabela-recebimentos-container"></div>
     </div>
   </div>
 </div>
@@ -336,6 +367,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let contaEditandoId = null;
 let contaPagandoId = null;
 let recebimentoRecebendoId = null;
+let ordenacaoAscendente = false;
 
 // ── Helpers ──
 function headersAnon() {
@@ -467,6 +499,27 @@ async function checkSession() {
   }
 }
 
+// ── Filtro: data range vs mês ──
+function aoMudarFiltroMes() {
+  // Quando o usuário seleciona um mês, limpa os filtros de data range
+  try {
+    document.getElementById('filtro-data-de').value = '';
+    document.getElementById('filtro-data-ate').value = '';
+  } catch (_) {}
+  carregarDados();
+}
+
+// ── Ordenação ──
+function toggleOrdenacao() {
+  try {
+    ordenacaoAscendente = !ordenacaoAscendente;
+    document.getElementById('btn-ordem').textContent = ordenacaoAscendente ? 'Data ↑' : 'Data ↓';
+    carregarDados();
+  } catch (e) {
+    console.error('Exceção em toggleOrdenacao:', e);
+  }
+}
+
 // ── Dados (Pagar) ──
 async function carregarDados() {
   document.getElementById('loading-indicator').style.display = 'block';
@@ -474,7 +527,8 @@ async function carregarDados() {
   document.getElementById('tbody-contas').innerHTML = '';
 
   try {
-    let path = '/rest/v1/pagamentos?select=*,categorias(nome,cor_hex)&order=data_vencimento.desc';
+    const ordem = ordenacaoAscendente ? 'data_vencimento.asc' : 'data_vencimento.desc';
+    let path = '/rest/v1/pagamentos?select=*,categorias(nome,cor_hex),fornecedores(nome)&order=' + ordem;
 
     const status = document.getElementById('filtro-status').value;
     if (status) {
@@ -482,13 +536,25 @@ async function carregarDados() {
     }
 
     const mes = document.getElementById('filtro-mes').value;
-    if (mes) {
+    const dataDe = document.getElementById('filtro-data-de').value;
+    const dataAte = document.getElementById('filtro-data-ate').value;
+
+    // Filtro por mês (apenas se data range não estiver preenchido)
+    if (mes && !dataDe && !dataAte) {
       const inicio = mes + '-01';
       const [ano, mesNum] = mes.split('-').map(Number);
       const ultimoDia = new Date(ano, mesNum, 0).getDate();
       const fim = mes + '-' + String(ultimoDia).padStart(2, '0');
       path += '&data_vencimento=gte.' + encodeURIComponent(inicio);
       path += '&data_vencimento=lte.' + encodeURIComponent(fim);
+    }
+
+    // Filtro por data range (De/Até) — alternativa ao mês
+    if (dataDe) {
+      path += '&data_vencimento=gte.' + encodeURIComponent(dataDe);
+    }
+    if (dataAte) {
+      path += '&data_vencimento=lte.' + encodeURIComponent(dataAte);
     }
 
     const busca = document.getElementById('filtro-busca').value.trim();
@@ -508,43 +574,120 @@ async function carregarDados() {
     tbody.innerHTML = '';
 
     if (dataArr.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:30px;">Nenhuma conta encontrada</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:30px;">Nenhuma conta encontrada</td></tr>';
       atualizarCards([]);
       return;
     }
 
-    dataArr.forEach(c => {
-      const venc = new Date(c.data_vencimento + 'T12:00:00');
-      const hoje = new Date();
-      const statusReal = (!c.data_pagamento && venc < hoje) ? 'atrasado' : c.status;
-      const cor = c.categorias?.cor_hex || '#888';
-      const catNome = c.categorias?.nome || '—';
-      const tr = document.createElement('tr');
-      const podePagar = statusReal === 'pendente' || statusReal === 'atrasado';
-      const podeEditar = statusReal !== 'pago';
-      tr.innerHTML = `
-        <td><strong>${c.descricao}</strong></td>
-        <td style="color:#f97316;font-weight:600;">R$ ${Number(c.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-        <td>${new Date(c.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
-        <td><span style="color:${cor}">●</span> ${catNome}</td>
-        <td><span class="status-badge ${statusReal}">${statusReal}</span></td>
-        <td>
-          ${podePagar ? `<button class="btn-acao btn-acao-pagar" onclick="abrirModalPagamento(${c.id},'${c.descricao.replace(/'/g,"\\'")}')">✅ Pagar</button>` : '<button class="btn-acao btn-acao-pagar" disabled>✅ Pagar</button>'}
-          ${podeEditar ? `<button class="btn-acao btn-acao-editar" onclick="abrirModalEdicao(${c.id})">✏️ Editar</button>` : '<button class="btn-acao btn-acao-editar" disabled>✏️ Editar</button>'}
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+    const agruparPor = document.getElementById('filtro-agrupamento').value;
+
+    if (agruparPor === 'categoria' || agruparPor === 'fornecedor') {
+      renderizarAgrupado(tbody, dataArr, agruparPor);
+    } else {
+      renderizarNormal(tbody, dataArr);
+    }
 
     atualizarCards(dataArr);
   } catch (e) {
     console.error('Exceção em carregarDados:', e);
     const tbody = document.getElementById('tbody-contas');
-    tbody.innerHTML = `<tr><td colspan="6" class="error-msg">Erro inesperado: ${e.message}</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="7" class="error-msg">Erro inesperado: ' + e.message + '</td></tr>';
     document.getElementById('tabela-contas').style.display = 'table';
   } finally {
     document.getElementById('loading-indicator').style.display = 'none';
   }
+}
+
+function renderizarNormal(tbody, dataArr) {
+  dataArr.forEach(c => {
+    const venc = new Date(c.data_vencimento + 'T12:00:00');
+    const hoje = new Date();
+    const statusReal = (!c.data_pagamento && venc < hoje) ? 'atrasado' : c.status;
+    const cor = c.categorias?.cor_hex || '#888';
+    const catNome = c.categorias?.nome || '—';
+    const fornNome = c.fornecedores?.nome || '—';
+    const podePagar = statusReal === 'pendente' || statusReal === 'atrasado';
+    const podeEditar = statusReal !== 'pago';
+    const tr = document.createElement('tr');
+    const descEscapada = c.descricao.replace(/'/g, "\\'");
+    tr.innerHTML = `
+      <td><strong>${c.descricao}</strong></td>
+      <td style="color:#f97316;font-weight:600;">R$ ${Number(c.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+      <td>${new Date(c.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+      <td><span style="color:${cor}">●</span> ${catNome}</td>
+      <td>${fornNome}</td>
+      <td><span class="status-badge ${statusReal}">${statusReal}</span></td>
+      <td>
+        ${podePagar ? `<button class="btn-acao btn-acao-pagar" onclick="abrirModalPagamento(${c.id},'${descEscapada}')">✅ Pagar</button>` : '<button class="btn-acao btn-acao-pagar" disabled>✅ Pagar</button>'}
+        ${podeEditar ? `<button class="btn-acao btn-acao-editar" onclick="editarConta(${c.id})">✏️ Editar</button>` : '<button class="btn-acao btn-acao-editar" disabled>✏️ Editar</button>'}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderizarAgrupado(tbody, dataArr, agruparPor) {
+  const grupos = {};
+  dataArr.forEach(c => {
+    let chave;
+    if (agruparPor === 'categoria') {
+      chave = c.categorias?.nome || 'Sem categoria';
+    } else {
+      chave = c.fornecedores?.nome || 'Sem fornecedor';
+    }
+    if (!grupos[chave]) grupos[chave] = [];
+    grupos[chave].push(c);
+  });
+
+  const chavesOrdenadas = Object.keys(grupos).sort();
+
+  chavesOrdenadas.forEach((chave, idx) => {
+    const itens = grupos[chave];
+    let subtotal = 0;
+
+    // Cabeçalho do grupo
+    if (idx > 0) {
+      const spacer = document.createElement('tr');
+      spacer.innerHTML = '<td colspan="7" style="padding:4px;"></td>';
+      tbody.appendChild(spacer);
+    }
+    const headerRow = document.createElement('tr');
+    const icon = agruparPor === 'categoria' ? '📁' : '🏢';
+    headerRow.innerHTML = '<td colspan="7" class="grupo-header">' + icon + ' ' + chave + ' <span style="color:#888;font-weight:400;margin-left:8px;">(' + itens.length + ' conta' + (itens.length !== 1 ? 's' : '') + ')</span></td>';
+    tbody.appendChild(headerRow);
+
+    itens.forEach(c => {
+      const venc = new Date(c.data_vencimento + 'T12:00:00');
+      const hoje = new Date();
+      const statusReal = (!c.data_pagamento && venc < hoje) ? 'atrasado' : c.status;
+      const cor = c.categorias?.cor_hex || '#888';
+      const catNome = c.categorias?.nome || '—';
+      const fornNome = c.fornecedores?.nome || '—';
+      const podePagar = statusReal === 'pendente' || statusReal === 'atrasado';
+      const podeEditar = statusReal !== 'pago';
+      const descEscapada = c.descricao.replace(/'/g, "\\'");
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${c.descricao}</strong></td>
+        <td style="color:#f97316;font-weight:600;">R$ ${Number(c.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+        <td>${new Date(c.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+        <td><span style="color:${cor}">●</span> ${catNome}</td>
+        <td>${fornNome}</td>
+        <td><span class="status-badge ${statusReal}">${statusReal}</span></td>
+        <td>
+          ${podePagar ? `<button class="btn-acao btn-acao-pagar" onclick="abrirModalPagamento(${c.id},'${descEscapada}')">✅ Pagar</button>` : '<button class="btn-acao btn-acao-pagar" disabled>✅ Pagar</button>'}
+          ${podeEditar ? `<button class="btn-acao btn-acao-editar" onclick="editarConta(${c.id})">✏️ Editar</button>` : '<button class="btn-acao btn-acao-editar" disabled>✏️ Editar</button>'}
+        </td>
+      `;
+      tbody.appendChild(tr);
+      subtotal += Number(c.valor);
+    });
+
+    // Linha de subtotal
+    const subtotalRow = document.createElement('tr');
+    subtotalRow.innerHTML = '<td colspan="7" class="grupo-subtotal">Subtotal ' + chave + ': R$ ' + subtotal.toLocaleString('pt-BR', {minimumFractionDigits:2}) + '</td>';
+    tbody.appendChild(subtotalRow);
+  });
 }
 
 function atualizarCards(data) {
@@ -563,6 +706,40 @@ function atualizarCards(data) {
   document.getElementById('card-pago').textContent = 'R$ ' + pago.toLocaleString('pt-BR', {minimumFractionDigits:2});
   document.getElementById('card-atrasado').textContent = 'R$ ' + atrasado.toLocaleString('pt-BR', {minimumFractionDigits:2});
   document.getElementById('card-total').textContent = 'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+}
+
+// ── PROBLEMA 1: marcarComoPago() e editarConta() ──
+
+// marcarComoPago: PATCH direto no Supabase sem abrir modal
+async function marcarComoPago(id, data_pagamento) {
+  try {
+    if (!id || !data_pagamento) {
+      alert('ID da conta e data de pagamento são obrigatórios');
+      return;
+    }
+    await supabaseFetch('/rest/v1/pagamentos?id=eq.' + id, {
+      method: 'PATCH',
+      headers: headersAuth(),
+      body: JSON.stringify({
+        status: 'pago',
+        data_pagamento: data_pagamento
+      })
+    });
+    await carregarDados();
+  } catch (e) {
+    console.error('Exceção em marcarComoPago:', e);
+    alert('Erro ao marcar como pago: ' + e.message);
+  }
+}
+
+// editarConta: abre modal com dados atuais, ao salvar faz PATCH
+async function editarConta(id) {
+  try {
+    await abrirModalEdicao(id);
+  } catch (e) {
+    console.error('Exceção em editarConta:', e);
+    alert('Erro ao editar conta: ' + e.message);
+  }
 }
 
 // ── Categorias ──
@@ -703,16 +880,8 @@ async function confirmarPagamento() {
       alert('Selecione a data de pagamento');
       return;
     }
-    await supabaseFetch('/rest/v1/pagamentos?id=eq.' + id, {
-      method: 'PATCH',
-      headers: headersAuth(),
-      body: JSON.stringify({
-        status: 'pago',
-        data_pagamento: dataPagamento
-      })
-    });
+    await marcarComoPago(id, dataPagamento);
     fecharModalPagamento();
-    await carregarDados();
   } catch (e) {
     console.error('Exceção em confirmarPagamento:', e);
     alert('Erro ao confirmar pagamento: ' + e.message);
@@ -788,9 +957,8 @@ async function salvarEdicao() {
 // ════════════════════════════════════════
 
 async function carregarRecebimentos() {
-  document.getElementById('loading-indicator-receber').style.display = 'block';
-  document.getElementById('tabela-recebimentos').style.display = 'none';
-  document.getElementById('tbody-recebimentos').innerHTML = '';
+  const container = document.getElementById('tabela-recebimentos-container');
+  container.innerHTML = '<div id="loading-indicator-receber" class="loading">Carregando...</div>';
 
   try {
     const data = await supabaseFetch('/rest/v1/recebimentos?select=*&order=data_vencimento.desc', {
@@ -800,43 +968,67 @@ async function carregarRecebimentos() {
 
     const dataArr = Array.isArray(data) ? data : [];
 
-    document.getElementById('tabela-recebimentos').style.display = 'table';
-    const tbody = document.getElementById('tbody-recebimentos');
-    tbody.innerHTML = '';
-
     if (dataArr.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:30px;">Nenhum recebimento encontrado</td></tr>';
+      container.innerHTML = `
+        <div class="table-info">
+          <span class="icon">📄</span>
+          <div class="title">Nenhum recebimento encontrado</div>
+          <p>Clique em "+ Novo Recebimento" para adicionar.</p>
+        </div>
+      `;
       atualizarCardsReceber([]);
       return;
     }
 
+    let html = '<table id="tabela-recebimentos"><thead><tr><th>Nº Nota</th><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead><tbody>';
     dataArr.forEach(r => {
       const venc = new Date(r.data_vencimento + 'T12:00:00');
       const hoje = new Date();
       const statusReal = (!r.data_recebimento && venc < hoje) ? 'vencido' : (r.status || 'a_receber');
       const podeReceber = statusReal === 'a_receber' || statusReal === 'vencido';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${r.numero_nota || '—'}</strong></td>
-        <td>${r.descricao || '—'}</td>
-        <td style="color:#f97316;font-weight:600;">R$ ${Number(r.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-        <td>${new Date(r.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
-        <td><span class="status-badge ${statusReal}">${statusReal === 'a_receber' ? 'A Receber' : statusReal === 'vencido' ? 'Vencido' : 'Recebido'}</span></td>
-        <td>
-          ${podeReceber ? `<button class="btn-acao btn-acao-receber" onclick="abrirModalRecebido(${r.id},'${(r.descricao || '—').replace(/'/g,"\\'")}')">✅ Recebido</button>` : '<button class="btn-acao btn-acao-receber" disabled>✅ Recebido</button>'}
-        </td>
-      `;
-      tbody.appendChild(tr);
+      const descEscapada = (r.descricao || '—').replace(/'/g, "\\'");
+      html += '<tr>';
+      html += '<td><strong>' + (r.numero_nota || '—') + '</strong></td>';
+      html += '<td>' + (r.descricao || '—') + '</td>';
+      html += '<td style="color:#f97316;font-weight:600;">R$ ' + Number(r.valor).toLocaleString('pt-BR', {minimumFractionDigits:2}) + '</td>';
+      html += '<td>' + venc.toLocaleDateString('pt-BR') + '</td>';
+      html += '<td><span class="status-badge ' + statusReal + '">' + (statusReal === 'a_receber' ? 'A Receber' : statusReal === 'vencido' ? 'Vencido' : 'Recebido') + '</span></td>';
+      html += '<td>';
+      if (podeReceber) {
+        html += '<button class="btn-acao btn-acao-receber" onclick="abrirModalRecebido(' + r.id + ",'" + descEscapada + "')" + '">✅ Recebido</button>';
+      } else {
+        html += '<button class="btn-acao btn-acao-receber" disabled>✅ Recebido</button>';
+      }
+      html += '</td></tr>';
     });
-
+    html += '</tbody></table>';
+    container.innerHTML = html;
     atualizarCardsReceber(dataArr);
   } catch (e) {
     console.error('Exceção em carregarRecebimentos:', e);
-    const tbody = document.getElementById('tbody-recebimentos');
-    tbody.innerHTML = '<tr><td colspan="6" class="error-msg">Erro inesperado: ' + e.message + '</td></tr>';
-    document.getElementById('tabela-recebimentos').style.display = 'table';
+    const msgErro = e.message || '';
+    // PROBLEMA 2: tratar erro de tabela recebimentos inexistente
+    if (msgErro.toLowerCase().includes('relation') ||
+        msgErro.toLowerCase().includes('does not exist') ||
+        msgErro.toLowerCase().includes('not exist') ||
+        msgErro.toLowerCase().includes('404') ||
+        msgErro.toLowerCase().includes('not found') ||
+        msgErro.toLowerCase().includes('recebimento')) {
+      container.innerHTML = `
+        <div class="table-info">
+          <span class="icon">🛠️</span>
+          <div class="title">Tabela de recebimentos ainda não criada</div>
+          <p>O Thales vai criar a tabela <strong>recebimentos</strong> no Supabase em breve.</p>
+          <p style="font-size:13px;color:#666;margin-top:8px;">Detalhe técnico: ${msgErro}</p>
+        </div>
+      `;
+    } else {
+      container.innerHTML = '<div class="table-info"><span class="icon">❌</span><div class="title">Erro ao carregar recebimentos</div><p>' + msgErro + '</p></div>';
+    }
+    atualizarCardsReceber([]);
   } finally {
-    document.getElementById('loading-indicator-receber').style.display = 'none';
+    const spinner = document.getElementById('loading-indicator-receber');
+    if (spinner) spinner.style.display = 'none';
   }
 }
 
@@ -853,7 +1045,6 @@ function atualizarCardsReceber(data) {
     if (statusReal === 'a_receber') {
       aReceber += Number(r.valor);
     } else if (statusReal === 'recebido') {
-      // Verificar se foi recebido no mês atual
       if (r.data_recebimento) {
         const dataRec = new Date(r.data_recebimento + 'T12:00:00');
         if (dataRec.getMonth() === mesAtual && dataRec.getFullYear() === anoAtual) {
