@@ -630,9 +630,9 @@ function renderizarNormal(tbody, dataArr) {
       '<td>' + fornNome + '</td>' +
       '<td><span class="status-badge ' + statusReal + '">' + statusReal + '</span></td>' +
       '<td>' +
-        (podePagar ? '<button class="btn-acao btn-acao-pagar" onclick="abrirModalPagamento(' + c.id + ')">✅ Pagar</button>' : '<button class="btn-acao btn-acao-pagar" disabled>✅ Pagar</button>') +
-        (podeEditar ? '<button class="btn-acao btn-acao-editar" onclick="editarConta(' + c.id + ')">✏️ Editar</button>' : '<button class="btn-acao btn-acao-editar" disabled>✏️ Editar</button>') +
-      '</td>';
+        (podePagar ? '<button class="btn-acao btn-acao-pagar" onclick="abrirModalPagamento(\'' + c.id + '\')">✅ Pagar</button>' : '<button class="btn-acao btn-acao-pagar" disabled>✅ Pagar</button>') +
+        (podeEditar ? '<button class="btn-acao btn-acao-editar" onclick="editarConta(\'' + c.id + '\')">✏️ Editar</button>' : '<button class="btn-acao btn-acao-editar" disabled>✏️ Editar</button>') +
+      '</td></tr>';
     tbody.appendChild(tr);
   });
 }
@@ -688,8 +688,8 @@ function renderizarAgrupado(tbody, dataArr, agruparPor) {
         '<td>' + fornNome + '</td>' +
         '<td><span class="status-badge ' + statusReal + '">' + statusReal + '</span></td>' +
         '<td>' +
-          (podePagar ? '<button class="btn-acao btn-acao-pagar" onclick="abrirModalPagamento(' + c.id + ')">✅ Pagar</button>' : '<button class="btn-acao btn-acao-pagar" disabled>✅ Pagar</button>') +
-          (podeEditar ? '<button class="btn-acao btn-acao-editar" onclick="editarConta(' + c.id + ')">✏️ Editar</button>' : '<button class="btn-acao btn-acao-editar" disabled>✏️ Editar</button>') +
+          (podePagar ? '<button class="btn-acao btn-acao-pagar" onclick="abrirModalPagamento(\'' + c.id + '\')">✅ Pagar</button>' : '<button class="btn-acao btn-acao-pagar" disabled>✅ Pagar</button>') +
+          (podeEditar ? '<button class="btn-acao btn-acao-editar" onclick="editarConta(\'' + c.id + '\')">✏️ Editar</button>' : '<button class="btn-acao btn-acao-editar" disabled>✏️ Editar</button>') +
         '</td>';
       tbody.appendChild(tr);
       subtotal += Number(c.valor);
@@ -1029,7 +1029,7 @@ async function carregarRecebimentos() {
       html += '<td><span class="status-badge ' + statusReal + '">' + statusLabel + '</span></td>';
       html += '<td>';
       if (podeReceber) {
-        html += '<button class="btn-acao btn-acao-receber" onclick="abrirModalRecebido(' + r.id + ')">✅ Recebido</button>';
+        html += '<button class="btn-acao btn-acao-receber" onclick="abrirModalRecebido(\'' + r.id + '\')">✅ Recebido</button>';
       } else {
         html += '<button class="btn-acao btn-acao-receber" disabled>✅ Recebido</button>';
       }
