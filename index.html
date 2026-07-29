@@ -423,6 +423,7 @@ tr:last-child td{border-bottom:none}
 
       var data = await resp.json();
       sessionStorage.setItem('supabase_token', data.access_token);
+      if (data.refresh_token) sessionStorage.setItem('supabase_refresh_token', data.refresh_token);
       sessionStorage.setItem('user_email', email);
       if (data.user && data.user.id) sessionStorage.setItem('user_id', data.user.id);
       document.getElementById('userEmail').textContent = email;
@@ -454,15 +455,58 @@ tr:last-child td{border-bottom:none}
   };
 
   // --- AUTO LOGIN CHECK ---
-  function checkSession() {
+  async function checkSession() {
     var token = sessionStorage.getItem('supabase_token');
     var email = sessionStorage.getItem('user_email');
-    if (token && email) {
-      document.getElementById('userEmail').textContent = email;
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('dashboard').style.display = 'block';
-      carregarPagamentos();
-      carregarRecebimentos();
+    if (!token || !email) return;
+    
+    try {
+      // Tenta verificar se o token ainda é válido
+      var resp = await fetch(SUPABASE_URL + '/auth/v1/user', {
+        method: 'GET',
+        headers: headersAuth()
+      });
+      
+      if (resp.ok) {
+        // Token válido! Carrega dashboard
+        document.getElementById('userEmail').textContent = email;
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        carregarPagamentos();
+        carregarRecebimentos();
+        return;
+      }
+      
+      // Token expirado — tenta renovar com refresh_token
+      var refreshToken = sessionStorage.getItem('supabase_refresh_token');
+      if (refreshToken) {
+        var refreshResp = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+          method: 'POST',
+          headers: headersAnon(),
+          body: JSON.stringify({ refresh_token: refreshToken })
+        });
+        
+        if (refreshResp.ok) {
+          var refreshData = await refreshResp.json();
+          sessionStorage.setItem('supabase_token', refreshData.access_token);
+          if (refreshData.refresh_token) sessionStorage.setItem('supabase_refresh_token', refreshData.refresh_token);
+          
+          document.getElementById('userEmail').textContent = email;
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('dashboard').style.display = 'block';
+          carregarPagamentos();
+          carregarRecebimentos();
+          return;
+        }
+      }
+      
+      // Não conseguiu renovar — limpa sessão
+      throw new Error('Token expirado');
+    } catch (e) {
+      sessionStorage.removeItem('supabase_token');
+      sessionStorage.removeItem('supabase_refresh_token');
+      sessionStorage.removeItem('user_email');
+      sessionStorage.removeItem('user_id');
     }
   }
 
