@@ -101,6 +101,14 @@ tr:last-child td{border-bottom:none}
 .toast.info{background:#3b82f6;color:#fff}
 /* RESPONSIVE */
 @media(max-width:768px){header{padding:12px 16px;flex-direction:column;gap:8px}.filters{padding:12px 16px;flex-direction:column;align-items:stretch}.tab-btn{padding:12px 16px;font-size:13px}.tab-content{padding:16px}th,td{padding:8px 10px;font-size:12px}.modal{width:95%}}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+.card{background:#1e1e32;border-radius:12px;padding:20px;border-left:4px solid #f97316}
+.card h3{font-size:12px;color:#8888aa;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.card-value{font-size:26px;font-weight:700;color:#fff}
+.card.card-pendente{border-left-color:#f97316}
+.card.card-pago{border-left-color:#22c55e}
+.card.card-atrasado{border-left-color:#ef4444}
+.card.card-total{border-left-color:#3b82f6}
 </style>
 </head>
 <body>
@@ -160,6 +168,12 @@ tr:last-child td{border-bottom:none}
 
   <!-- TAB PAGAMENTOS -->
   <div id="tabPagamentos" class="tab-content active">
+    <div class="cards" id="cardsPagamentos">
+      <div class="card card-pendente"><h3>A Pagar</h3><div class="card-value" id="cardPendente">R$ 0,00</div></div>
+      <div class="card card-pago"><h3>Pago no Mês</h3><div class="card-value" id="cardPagoMes">R$ 0,00</div></div>
+      <div class="card card-atrasado"><h3>Atrasado</h3><div class="card-value" id="cardAtrasado">R$ 0,00</div></div>
+      <div class="card card-total"><h3>Total Registrado</h3><div class="card-value" id="cardTotalPagamentos">R$ 0,00</div></div>
+    </div>
     <div style="margin-bottom:12px"><button class="btn-primary" onclick="abrirModalNovaConta()">+ NOVA CONTA</button></div>
     <div class="table-container">
       <table>
@@ -183,6 +197,12 @@ tr:last-child td{border-bottom:none}
 
   <!-- TAB RECEBIMENTOS -->
   <div id="tabRecebimentos" class="tab-content">
+    <div class="cards" id="cardsRecebimentos">
+      <div class="card card-pendente"><h3>A Receber</h3><div class="card-value" id="cardAReceber">R$ 0,00</div></div>
+      <div class="card card-pago"><h3>Recebido no Mês</h3><div class="card-value" id="cardRecebidoMes">R$ 0,00</div></div>
+      <div class="card card-atrasado"><h3>Vencido</h3><div class="card-value" id="cardVencido">R$ 0,00</div></div>
+      <div class="card card-total"><h3>Total Receber</h3><div class="card-value" id="cardTotalReceber">R$ 0,00</div></div>
+    </div>
     <div style="margin-bottom:12px"><button class="btn-primary" onclick="abrirModalNovoRecebimento()">+ NOVO RECEBIMENTO</button></div>
     <div class="table-container">
       <table>
@@ -736,6 +756,7 @@ tr:last-child td{border-bottom:none}
       }
 
       var filtered = aplicarFiltros(data);
+      atualizarCardsPagamentos(filtered);
       renderPagamentos(filtered, tbody);
     } catch (err) {
       tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><p>Erro ao carregar dados</p><span>' + err.message + '</span></td></tr>';
@@ -814,6 +835,41 @@ tr:last-child td{border-bottom:none}
       '</tr>';
   }
 
+  // --- CARDS RESUMO PAGAMENTOS ---
+  function atualizarCardsPagamentos(data) {
+    var hoje = new Date();
+    var mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+
+    var pendente = 0, pagoMes = 0, atrasado = 0, total = 0;
+
+    for (var i = 0; i < data.length; i++) {
+      var item = data[i];
+      var valor = parseFloat(item.valor) || 0;
+      total += valor;
+
+      if (item.status === 'pendente') {
+        pendente += valor;
+        // Atrasado: vencido e não pago
+        if (item.data_vencimento && item.data_vencimento < hoje.toISOString().split('T')[0]) {
+          atrasado += valor;
+        }
+      } else if (item.status === 'pago') {
+        // Pago no mês: verificar data_pagamento
+        if (item.data_pagamento) {
+          var pagMes = item.data_pagamento.substring(0, 7);
+          if (pagMes === mesAtual) {
+            pagoMes += valor;
+          }
+        }
+      }
+    }
+
+    document.getElementById('cardPendente').textContent = formatMoney(pendente);
+    document.getElementById('cardPagoMes').textContent = formatMoney(pagoMes);
+    document.getElementById('cardAtrasado').textContent = formatMoney(atrasado);
+    document.getElementById('cardTotalPagamentos').textContent = formatMoney(total);
+  }
+
   // --- CARREGAR RECEBIMENTOS ---
   async function carregarRecebimentos() {
     var tbody = document.getElementById('recebimentosBody');
@@ -835,6 +891,7 @@ tr:last-child td{border-bottom:none}
       }
 
       var filtered = aplicarFiltros(data);
+      atualizarCardsRecebimentos(filtered);
       renderRecebimentos(filtered, tbody);
     } catch (err) {
       tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><p>Erro ao carregar dados</p><span>' + err.message + '</span></td></tr>';
@@ -870,6 +927,41 @@ tr:last-child td{border-bottom:none}
       '<td><span class="status-badge ' + statusClass + '">' + statusLabel + '</span></td>' +
       '<td>' + acoes + '</td>' +
       '</tr>';
+  }
+
+  // --- CARDS RESUMO RECEBIMENTOS ---
+  function atualizarCardsRecebimentos(data) {
+    var hoje = new Date();
+    var mesAtual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+
+    var aReceber = 0, recebidoMes = 0, vencido = 0, total = 0;
+
+    for (var i = 0; i < data.length; i++) {
+      var item = data[i];
+      var valor = parseFloat(item.valor) || 0;
+      total += valor;
+
+      if (item.status === 'pendente') {
+        aReceber += valor;
+        // Vencido: vencido e não recebido
+        if (item.data_vencimento && item.data_vencimento < hoje.toISOString().split('T')[0]) {
+          vencido += valor;
+        }
+      } else if (item.status === 'recebido') {
+        // Recebido no mês: verificar data_recebimento
+        if (item.data_recebimento) {
+          var recMes = item.data_recebimento.substring(0, 7);
+          if (recMes === mesAtual) {
+            recebidoMes += valor;
+          }
+        }
+      }
+    }
+
+    document.getElementById('cardAReceber').textContent = formatMoney(aReceber);
+    document.getElementById('cardRecebidoMes').textContent = formatMoney(recebidoMes);
+    document.getElementById('cardVencido').textContent = formatMoney(vencido);
+    document.getElementById('cardTotalReceber').textContent = formatMoney(total);
   }
 
   // --- FILTROS ---
