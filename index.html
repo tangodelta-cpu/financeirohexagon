@@ -3,1200 +3,815 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hexagon Finance</title>
+<title>Hexagon Finance - Dashboard</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:system-ui,-apple-system,sans-serif; }
-body { background:#1a1a2e; color:#e0e0e0; min-height:100vh; }
-
-/* Login */
-#login-screen {
-  display:flex; align-items:center; justify-content:center; min-height:100vh;
-  background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
-}
-.login-card {
-  background:#1e1e32; border-radius:16px; padding:40px; width:90%; max-width:400px;
-  box-shadow:0 20px 60px rgba(0,0,0,0.5);
-}
-.login-card h1 { color:#f97316; font-size:28px; margin-bottom:4px; }
-.login-card p { color:#888; margin-bottom:28px; font-size:14px; }
-.login-card input {
-  width:100%; padding:14px 16px; margin-bottom:14px; border:1px solid #333;
-  border-radius:10px; background:#252542; color:#fff; font-size:15px;
-  outline:none; transition:border-color .2s;
-}
-.login-card input:focus { border-color:#f97316; }
-.login-card button {
-  width:100%; padding:14px; background:#f97316; color:#fff; border:none;
-  border-radius:10px; font-size:16px; font-weight:600; cursor:pointer;
-  transition:background .2s;
-}
-.login-card button:hover { background:#ea580c; }
-.login-card .error { color:#ef4444; font-size:13px; margin-bottom:12px; display:none; }
-
-/* Dashboard */
-#dashboard { display:none; }
-.header {
-  background:#1e1e32; padding:16px 24px; display:flex; justify-content:space-between;
-  align-items:center; border-bottom:1px solid #2d2d4a;
-}
-.header h1 { color:#f97316; font-size:22px; }
-.header .user-info { display:flex; align-items:center; gap:16px; }
-.header .user-info span { color:#888; font-size:14px; }
-.header .logout-btn {
-  background:transparent; color:#ef4444; border:1px solid #ef4444;
-  padding:6px 16px; border-radius:8px; cursor:pointer; font-size:13px;
-  transition:all .2s;
-}
-.header .logout-btn:hover { background:#ef4444; color:#fff; }
-
-.container { max-width:1200px; margin:0 auto; padding:20px; }
-
-/* Abas */
-.abas {
-  display:flex; gap:8px; margin-bottom:24px;
-}
-.aba-btn {
-  padding:10px 24px; border-radius:24px; border:none; font-size:15px; font-weight:600;
-  cursor:pointer; transition:all .2s; background:#252542; color:#888;
-}
-.aba-btn:hover { background:#2d2d4a; color:#ccc; }
-.aba-btn.ativo { background:#f97316; color:#fff; }
-.aba-btn.ativo:hover { background:#ea580c; }
-
-/* Cards */
-.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:24px; }
-.card {
-  background:#1e1e32; border-radius:12px; padding:20px; border-left:4px solid #f97316;
-  box-shadow:0 4px 20px rgba(0,0,0,0.2);
-}
-.card h3 { font-size:13px; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
-.card .value { font-size:28px; font-weight:700; color:#fff; }
-.card.pendente { border-left-color:#f97316; }
-.card.pago { border-left-color:#22c55e; }
-.card.atrasado { border-left-color:#ef4444; }
-.card.saldo { border-left-color:#3b82f6; }
-.card.recebido { border-left-color:#22c55e; }
-.card.vencido { border-left-color:#ef4444; }
-.card.a-receber { border-left-color:#f97316; }
-
-.filters { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
-.filters select, .filters input, .filters button {
-  background:#252542; border:1px solid #333; color:#fff; padding:10px 14px;
-  border-radius:8px; font-size:14px; outline:none;
-}
-.filters select:focus, .filters input:focus { border-color:#f97316; }
-.filters button {
-  cursor:pointer; transition:background .2s; font-weight:600;
-}
-.filters button:hover { background:#2d2d4a; }
-.filters .filter-label { color:#888; font-size:13px; margin-right:-4px; }
-.filters .date-input { width:150px; }
-.filters .sort-btn { min-width:90px; }
-.filters .group-select { min-width:150px; }
-
-table { width:100%; border-collapse:collapse; background:#1e1e32; border-radius:12px; overflow:hidden; margin-bottom:30px; }
-th { background:#252542; color:#888; padding:14px 16px; text-align:left; font-size:13px; text-transform:uppercase; letter-spacing:1px; }
-td { padding:14px 16px; border-top:1px solid #2d2d4a; font-size:14px; }
-.status-badge {
-  display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;
-}
-.status-badge.pendente { background:#f9731620; color:#f97316; }
-.status-badge.pago { background:#22c55e20; color:#22c55e; }
-.status-badge.atrasado { background:#ef444420; color:#ef4444; }
-.status-badge.recebido { background:#22c55e20; color:#22c55e; }
-.status-badge.a_receber { background:#f9731620; color:#f97316; }
-.status-badge.vencido { background:#ef444420; color:#ef4444; }
-
-.btn-novo {
-  background:#f97316; color:#fff; border:none; padding:10px 20px; border-radius:8px;
-  font-size:14px; font-weight:600; cursor:pointer; margin-bottom:16px; transition:background .2s;
-}
-.btn-novo:hover { background:#ea580c; }
-
-/* Ações nas tabelas */
-.btn-acao {
-  border:none; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600;
-  cursor:pointer; transition:all .2s; margin-right:4px;
-}
-.btn-acao-pagar { background:#22c55e; color:#fff; }
-.btn-acao-pagar:hover { background:#16a34a; }
-.btn-acao-editar { background:#f97316; color:#fff; }
-.btn-acao-editar:hover { background:#ea580c; }
-.btn-acao-receber { background:#22c55e; color:#fff; }
-.btn-acao-receber:hover { background:#16a34a; }
-.btn-acao:disabled { opacity:0.4; cursor:not-allowed; }
-
-/* Modal */
-.modal-overlay {
-  display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6);
-  align-items:center; justify-content:center; z-index:100;
-}
-.modal-overlay.active { display:flex; }
-.modal {
-  background:#1e1e32; border-radius:16px; padding:30px; width:90%; max-width:480px;
-  max-height:90vh; overflow-y:auto;
-}
-.modal h2 { color:#f97316; margin-bottom:20px; font-size:20px; }
-.modal label { display:block; color:#888; font-size:13px; margin-bottom:4px; margin-top:14px; }
-.modal input, .modal select, .modal textarea {
-  width:100%; padding:12px 14px; border:1px solid #333; border-radius:8px;
-  background:#252542; color:#fff; font-size:14px; outline:none;
-}
-.modal input:focus, .modal select:focus { border-color:#f97316; }
-.modal .btn-row { display:flex; gap:12px; margin-top:24px; }
-.modal .btn-row button { flex:1; padding:12px; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
-.modal .btn-save { background:#f97316; color:#fff; border:none; }
-.modal .btn-save:hover { background:#ea580c; }
-.modal .btn-cancel { background:transparent; color:#888; border:1px solid #333; }
-.modal .btn-cancel:hover { background:#252542; }
-.modal .btn-pagar { background:#22c55e; color:#fff; border:none; }
-.modal .btn-pagar:hover { background:#16a34a; }
-
-.loading { text-align:center; padding:40px; color:#888; }
-.error-msg { color:#ef4444; text-align:center; padding:20px; }
-
-/* Aba content */
-.aba-content { display:none; }
-.aba-content.ativo { display:block; }
-
-/* Agrupamento */
-.grupo-header {
-  background:#252542; color:#f97316; font-weight:700; font-size:14px; padding:10px 16px;
-  border-top:2px solid #2d2d4a; border-bottom:1px solid #2d2d4a;
-}
-.grupo-subtotal {
-  background:#1a1a2e; color:#f97316; font-weight:600; font-size:13px; padding:8px 16px;
-  text-align:right; border-top:1px solid #2d2d4a;
-}
-
-/* Tabela info amigável */
-.table-info {
-  background:#1e1e32; border-radius:12px; padding:30px; text-align:center; color:#888;
-  margin-bottom:30px; font-size:15px;
-}
-.table-info .icon { font-size:40px; margin-bottom:12px; display:block; }
-.table-info .title { font-size:18px; color:#f97316; margin-bottom:8px; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh}
+/* LOGIN */
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1a1a2e 0%,#252542 50%,#1a1a2e 100%)}
+.login-card{background:#252542;padding:48px 40px;border-radius:16px;width:400px;max-width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);border:1px solid #333366}
+.login-card h1{color:#f97316;font-size:28px;text-align:center;margin-bottom:8px}
+.login-card p{color:#8888aa;text-align:center;margin-bottom:32px;font-size:14px}
+.login-card label{display:block;color:#aaaacc;font-size:13px;margin-bottom:6px;font-weight:600}
+.login-card input{width:100%;padding:12px 16px;background:#1e1e36;border:1px solid #3a3a5c;border-radius:8px;color:#e0e0e0;font-size:15px;outline:none;transition:border-color 0.2s}
+.login-card input:focus{border-color:#f97316}
+.login-card .form-group{margin-bottom:20px}
+.login-card button{width:100%;padding:14px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;transition:background 0.2s}
+.login-card button:hover{background:#e06600}
+.login-card .login-error{color:#ff4444;text-align:center;margin-top:12px;font-size:13px;display:none}
+/* DASHBOARD */
+#dashboard{display:none}
+header{background:#252542;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #333366}
+header h1{color:#f97316;font-size:22px;display:flex;align-items:center;gap:10px}
+header .user-info{display:flex;align-items:center;gap:16px}
+header .user-info span{color:#aaaacc;font-size:14px}
+header .btn-logout{padding:8px 20px;background:transparent;border:1px solid #ff4444;color:#ff4444;border-radius:6px;cursor:pointer;font-size:13px;transition:all 0.2s}
+header .btn-logout:hover{background:#ff4444;color:#fff}
+/* TABS */
+.tabs{display:flex;background:#252542;border-bottom:1px solid #333366}
+.tab-btn{padding:14px 28px;background:transparent;border:none;color:#8888aa;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;position:relative}
+.tab-btn:hover{color:#e0e0e0}
+.tab-btn.active{color:#f97316}
+.tab-btn.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:#f97316;border-radius:3px 3px 0 0}
+/* FILTERS */
+.filters{background:#1e1e36;padding:16px 24px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;border-bottom:1px solid #333366}
+.filters select,.filters input{background:#252542;border:1px solid #3a3a5c;border-radius:6px;color:#e0e0e0;padding:8px 12px;font-size:13px;outline:none}
+.filters select:focus,.filters input:focus{border-color:#f97316}
+.filters label{color:#8888aa;font-size:12px;display:flex;align-items:center;gap:6px}
+.filters .btn-filter{padding:8px 16px;background:#f97316;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+.filters .btn-filter:hover{background:#e06600}
+.filters .sort-btn{background:#252542;border:1px solid #3a3a5c;color:#e0e0e0;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;transition:all 0.2s}
+.filters .sort-btn:hover{border-color:#f97316}
+/* TABLE */
+.tab-content{display:none;padding:24px}
+.tab-content.active{display:block}
+.table-container{overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:#252542;border-radius:10px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.2)}
+thead{background:#1e1e36}
+th{padding:12px 16px;text-align:left;color:#8888aa;font-size:12px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;border-bottom:2px solid #333366}
+td{padding:12px 16px;border-bottom:1px solid #1e1e36;font-size:14px}
+tr:hover{background:#2a2a48}
+tr:last-child td{border-bottom:none}
+.status-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.status-pendente{background:#f9731622;color:#f97316;border:1px solid #f9731644}
+.status-pago{background:#22c55e22;color:#22c55e;border:1px solid #22c55e44}
+.status-recebido{background:#22c55e22;color:#22c55e;border:1px solid #22c55e44}
+.action-btn{padding:6px 12px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;margin:0 3px;transition:all 0.2s}
+.action-btn.pagar{background:#22c55e22;color:#22c55e;border:1px solid #22c55e44}
+.action-btn.pagar:hover{background:#22c55e;color:#fff}
+.action-btn.editar{background:#3b82f622;color:#3b82f6;border:1px solid #3b82f644}
+.action-btn.editar:hover{background:#3b82f6;color:#fff}
+.action-btn.receber{background:#22c55e22;color:#22c55e;border:1px solid #22c55e44}
+.action-btn.receber:hover{background:#22c55e;color:#fff}
+.valor{font-family:'Consolas','Courier New',monospace;font-weight:600;color:#f97316}
+.valor-positivo{color:#22c55e}
+.empty-state{text-align:center;padding:60px 20px;color:#555577}
+.empty-state p{font-size:16px;margin-bottom:8px}
+.empty-state span{font-size:13px;color:#444466}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.active{display:flex}
+.modal{background:#252542;border-radius:14px;width:480px;max-width:90%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5);border:1px solid #333366}
+.modal-header{padding:20px 24px;border-bottom:1px solid #333366;display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{color:#e0e0e0;font-size:18px}
+.modal-header .close-btn{background:transparent;border:none;color:#8888aa;font-size:22px;cursor:pointer;transition:color 0.2s}
+.modal-header .close-btn:hover{color:#ff4444}
+.modal-body{padding:24px}
+.modal-body .form-group{margin-bottom:18px}
+.modal-body label{display:block;color:#aaaacc;font-size:13px;margin-bottom:6px;font-weight:600}
+.modal-body input,.modal-body select,.modal-body textarea{width:100%;padding:10px 14px;background:#1e1e36;border:1px solid #3a3a5c;border-radius:8px;color:#e0e0e0;font-size:14px;outline:none;transition:border-color 0.2s}
+.modal-body input:focus,.modal-body select:focus,.modal-body textarea:focus{border-color:#f97316}
+.modal-body textarea{resize:vertical;min-height:60px;font-family:inherit}
+.modal-footer{padding:16px 24px;border-top:1px solid #333366;display:flex;justify-content:flex-end;gap:12px}
+.modal-footer .btn-cancelar{padding:10px 24px;background:transparent;border:1px solid #3a3a5c;color:#aaaacc;border-radius:8px;cursor:pointer;font-size:14px;transition:all 0.2s}
+.modal-footer .btn-cancelar:hover{background:#3a3a5c;color:#e0e0e0}
+.modal-footer .btn-confirmar{padding:10px 24px;background:#f97316;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;transition:background 0.2s}
+.modal-footer .btn-confirmar:hover{background:#e06600}
+.modal-footer .btn-confirmar:disabled{opacity:0.5;cursor:not-allowed}
+.loading-spinner{display:inline-block;width:16px;height:16px;border:2px solid #ffffff33;border-top:2px solid #fff;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;top:24px;right:24px;padding:14px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:2000;box-shadow:0 8px 30px rgba(0,0,0,0.4);transform:translateX(120%);transition:transform 0.3s ease;max-width:400px}
+.toast.show{transform:translateX(0)}
+.toast.success{background:#22c55e;color:#fff}
+.toast.error{background:#ff4444;color:#fff}
+.toast.info{background:#3b82f6;color:#fff}
+/* RESPONSIVE */
+@media(max-width:768px){header{padding:12px 16px;flex-direction:column;gap:8px}.filters{padding:12px 16px;flex-direction:column;align-items:stretch}.tab-btn{padding:12px 16px;font-size:13px}.tab-content{padding:16px}th,td{padding:8px 10px;font-size:12px}.modal{width:95%}}
 </style>
 </head>
 <body>
-
-<!-- Login Screen -->
-<div id="login-screen">
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
   <div class="login-card">
-    <h1>⬡ Hexagon</h1>
-    <p>Financeiro — Mineração</p>
-    <div class="error" id="login-error">Email ou senha inválidos</div>
-    <input type="email" id="email" placeholder="Email" autocomplete="email">
-    <input type="password" id="password" placeholder="Senha" autocomplete="current-password">
-    <button onclick="login()">Entrar</button>
+    <h1>🔶 Hexagon Finance</h1>
+    <p>Faça login para acessar o dashboard</p>
+    <form id="loginForm" onsubmit="return handleLogin(event)">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="seu@email.com" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <input type="password" id="password" placeholder="Sua senha" required autocomplete="current-password">
+      </div>
+      <button type="submit" id="loginBtn">Entrar</button>
+      <div class="login-error" id="loginError"></div>
+    </form>
   </div>
 </div>
 
-<!-- Dashboard -->
+<!-- DASHBOARD -->
 <div id="dashboard">
-  <div class="header">
-    <h1>⬡ Hexagon Finance</h1>
+  <header>
+    <h1>🔶 Hexagon Finance</h1>
     <div class="user-info">
-      <span id="user-email"></span>
-      <button class="logout-btn" onclick="logout()">Sair</button>
+      <span id="userEmail"></span>
+      <button class="btn-logout" onclick="handleLogout()">Sair</button>
     </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('pagamentos')">📋 Contas a Pagar</button>
+    <button class="tab-btn" onclick="switchTab('recebimentos')">💰 Recebimentos</button>
   </div>
 
-  <div class="container">
-    <!-- Abas de navegação -->
-    <div class="abas">
-      <button class="aba-btn ativo" data-aba="pagar" onclick="mudarAba('pagar')">📋 A Pagar</button>
-      <button class="aba-btn" data-aba="receber" onclick="mudarAba('receber')">📄 A Receber</button>
-    </div>
+  <!-- FILTERS -->
+  <div id="filtersArea" class="filters">
+    <select id="filterStatus" onchange="applyFilters()">
+      <option value="">Todos Status</option>
+      <option value="pendente">Pendente</option>
+      <option value="pago">Pago</option>
+    </select>
+    <label>Mês <input type="month" id="filterMes" onchange="applyFilters()"></label>
+    <label>De <input type="date" id="filterDataDe" onchange="applyFilters()"></label>
+    <label>Até <input type="date" id="filterDataAte" onchange="applyFilters()"></label>
+    <label>Busca <input type="text" id="filterBusca" placeholder="Descrição..." oninput="applyFilters()" style="width:160px"></label>
+    <button class="sort-btn" id="sortBtn" onclick="toggleSort()">↑ Data</button>
+    <select id="filterGrupo" onchange="applyFilters()">
+      <option value="">Sem Agrupamento</option>
+      <option value="categoria">Agrupar por Categoria</option>
+      <option value="fornecedor">Agrupar por Fornecedor</option>
+    </select>
+  </div>
 
-    <!-- Conteúdo: A Pagar -->
-    <div class="aba-content ativo" id="aba-pagar">
-      <div class="cards" id="cards-pagar">
-        <div class="card pendente"><h3>A Pagar</h3><div class="value" id="card-pendente">—</div></div>
-        <div class="card pago"><h3>Pago no Mês</h3><div class="value" id="card-pago">—</div></div>
-        <div class="card atrasado"><h3>Atrasado</h3><div class="value" id="card-atrasado">—</div></div>
-        <div class="card saldo"><h3>Total Registrado</h3><div class="value" id="card-total">—</div></div>
-      </div>
-
-      <button class="btn-novo" onclick="abrirModal()">+ Nova Conta</button>
-
-      <div class="filters">
-        <select id="filtro-status" onchange="carregarDados()">
-          <option value="">Todos os status</option>
-          <option value="pendente">Pendentes</option>
-          <option value="pago">Pagos</option>
-          <option value="atrasado">Atrasados</option>
-        </select>
-        <input type="month" id="filtro-mes" onchange="aoMudarFiltroMes()">
-        <span class="filter-label">De</span>
-        <input type="date" class="date-input" id="filtro-data-de" onchange="carregarDados()">
-        <span class="filter-label">Até</span>
-        <input type="date" class="date-input" id="filtro-data-ate" onchange="carregarDados()">
-        <button class="sort-btn" id="btn-ordem" onclick="toggleOrdenacao()">Data ↓</button>
-        <select class="group-select" id="filtro-agrupamento" onchange="carregarDados()">
-          <option value="">Agrupar por: Nenhum</option>
-          <option value="categoria">Agrupar por: Categoria</option>
-          <option value="fornecedor">Agrupar por: Fornecedor</option>
-        </select>
-        <input type="text" id="filtro-busca" placeholder="Buscar conta..." oninput="carregarDados()">
-      </div>
-
-      <div id="loading-indicator" class="loading">Carregando...</div>
-      <table id="tabela-contas" style="display:none">
+  <!-- TAB PAGAMENTOS -->
+  <div id="tabPagamentos" class="tab-content active">
+    <div class="table-container">
+      <table>
         <thead>
-          <tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Categoria</th><th>Fornecedor</th><th>Status</th><th>Ações</th></tr>
+          <tr>
+            <th>Descrição</th>
+            <th>Valor</th>
+            <th>Vencimento</th>
+            <th>Categoria</th>
+            <th>Fornecedor</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
         </thead>
-        <tbody id="tbody-contas"></tbody>
+        <tbody id="pagamentosBody">
+          <tr><td colspan="7" class="empty-state"><p>Carregando...</p></td></tr>
+        </tbody>
       </table>
     </div>
+  </div>
 
-    <!-- Conteúdo: A Receber -->
-    <div class="aba-content" id="aba-receber">
-      <div class="cards" id="cards-receber">
-        <div class="card a-receber"><h3>A Receber</h3><div class="value" id="card-a-receber">—</div></div>
-        <div class="card recebido"><h3>Recebido no Mês</h3><div class="value" id="card-recebido-mes">—</div></div>
-        <div class="card vencido"><h3>Vencido</h3><div class="value" id="card-vencido">—</div></div>
-        <div class="card saldo"><h3>Total Receber</h3><div class="value" id="card-total-receber">—</div></div>
+  <!-- TAB RECEBIMENTOS -->
+  <div id="tabRecebimentos" class="tab-content">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Nº Nota</th>
+            <th>Descrição</th>
+            <th>Valor</th>
+            <th>Vencimento</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="recebimentosBody">
+          <tr><td colspan="6" class="empty-state"><p>Carregando...</p></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGAR -->
+<div class="modal-overlay" id="modalPagar">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Confirmar Pagamento</h2>
+      <button class="close-btn" onclick="fecharModal('modalPagar')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:18px;color:#aaaacc">Confirme a data para registrar o pagamento:</p>
+      <div class="form-group">
+        <label for="pagarData">Data do Pagamento</label>
+        <input type="date" id="pagarData">
       </div>
-
-      <button class="btn-novo" onclick="abrirModalNovoRecebimento()">+ Novo Recebimento</button>
-
-      <div id="loading-indicator-receber" class="loading">Carregando...</div>
-      <div id="tabela-recebimentos-container"></div>
+      <input type="hidden" id="pagarId">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModal('modalPagar')">Cancelar</button>
+      <button class="btn-confirmar" id="btnConfirmarPagar" onclick="confirmarPagar()">Confirmar Pagamento</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Nova Conta (Pagar) -->
-<div class="modal-overlay" id="modal-overlay">
+<!-- MODAL RECEBER -->
+<div class="modal-overlay" id="modalReceber">
   <div class="modal">
-    <h2 id="modal-title">Nova Conta</h2>
-    <label>Descrição</label>
-    <input type="text" id="modal-descricao" placeholder="Ex: Energia CELESC">
-    <label>Valor (R$)</label>
-    <input type="number" step="0.01" id="modal-valor" placeholder="850,00">
-    <label>Data de Vencimento</label>
-    <input type="date" id="modal-vencimento">
-    <label>Categoria</label>
-    <select id="modal-categoria"></select>
-    <label>Fornecedor</label>
-    <input type="text" id="modal-fornecedor" placeholder="Nome do fornecedor">
-    <label>Observação</label>
-    <textarea id="modal-obs" rows="2"></textarea>
-    <div class="btn-row">
-      <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
-      <button class="btn-save" onclick="salvarConta()">Salvar</button>
+    <div class="modal-header">
+      <h2>Confirmar Recebimento</h2>
+      <button class="close-btn" onclick="fecharModal('modalReceber')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:18px;color:#aaaacc">Confirme a data para registrar o recebimento:</p>
+      <div class="form-group">
+        <label for="receberData">Data do Recebimento</label>
+        <input type="date" id="receberData">
+      </div>
+      <input type="hidden" id="receberId">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModal('modalReceber')">Cancelar</button>
+      <button class="btn-confirmar" id="btnConfirmarReceber" onclick="confirmarReceber()">Confirmar Recebimento</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Pagamento (Pagar) -->
-<div class="modal-overlay" id="modal-pagamento-overlay">
+<!-- MODAL EDITAR -->
+<div class="modal-overlay" id="modalEditar">
   <div class="modal">
-    <h2>✅ Confirmar Pagamento</h2>
-    <p style="color:#ccc;margin-bottom:16px;" id="pagamento-descricao">—</p>
-    <label>Data de Pagamento</label>
-    <input type="date" id="modal-pagamento-data">
-    <div class="btn-row">
-      <button class="btn-cancel" onclick="fecharModalPagamento()">Cancelar</button>
-      <button class="btn-pagar" onclick="confirmarPagamento()">✅ Confirmar Pagamento</button>
+    <div class="modal-header">
+      <h2>Editar Pagamento</h2>
+      <button class="close-btn" onclick="fecharModal('modalEditar')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editarId">
+      <div class="form-group">
+        <label for="editarDescricao">Descrição</label>
+        <input type="text" id="editarDescricao" required>
+      </div>
+      <div class="form-group">
+        <label for="editarValor">Valor (R$)</label>
+        <input type="number" id="editarValor" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label for="editarVencimento">Data de Vencimento</label>
+        <input type="date" id="editarVencimento" required>
+      </div>
+      <div class="form-group">
+        <label for="editarCategoria">Categoria</label>
+        <input type="text" id="editarCategoria" placeholder="Nome da categoria">
+      </div>
+      <div class="form-group">
+        <label for="editarFornecedor">Fornecedor</label>
+        <input type="text" id="editarFornecedor" placeholder="Nome do fornecedor">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModal('modalEditar')">Cancelar</button>
+      <button class="btn-confirmar" id="btnConfirmarEditar" onclick="confirmarEditar()">Salvar Alterações</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Edição (Pagar) -->
-<div class="modal-overlay" id="modal-edicao-overlay">
-  <div class="modal">
-    <h2>✏️ Editar Conta</h2>
-    <label>Descrição</label>
-    <input type="text" id="editar-descricao" placeholder="Ex: Energia CELESC">
-    <label>Valor (R$)</label>
-    <input type="number" step="0.01" id="editar-valor" placeholder="850,00">
-    <label>Data de Vencimento</label>
-    <input type="date" id="editar-vencimento">
-    <label>Categoria</label>
-    <select id="editar-categoria"></select>
-    <label>Observação</label>
-    <textarea id="editar-obs" rows="2"></textarea>
-    <div class="btn-row">
-      <button class="btn-cancel" onclick="fecharModalEdicao()">Cancelar</button>
-      <button class="btn-save" onclick="salvarEdicao()">💾 Salvar Alterações</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Novo Recebimento -->
-<div class="modal-overlay" id="modal-recebimento-overlay">
-  <div class="modal">
-    <h2>📄 Novo Recebimento</h2>
-    <label>Número da Nota</label>
-    <input type="text" id="rec-numero-nota" placeholder="Ex: NF-00123">
-    <label>Descrição</label>
-    <input type="text" id="rec-descricao" placeholder="Descrição do serviço">
-    <label>Valor (R$)</label>
-    <input type="number" step="0.01" id="rec-valor" placeholder="5000,00">
-    <label>Data de Vencimento</label>
-    <input type="date" id="rec-vencimento">
-    <div class="btn-row">
-      <button class="btn-cancel" onclick="fecharModalNovoRecebimento()">Cancelar</button>
-      <button class="btn-save" onclick="salvarRecebimento()">Salvar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Confirmar Recebimento -->
-<div class="modal-overlay" id="modal-recebido-overlay">
-  <div class="modal">
-    <h2>✅ Confirmar Recebimento</h2>
-    <p style="color:#ccc;margin-bottom:16px;" id="recebido-descricao">—</p>
-    <label>Data de Recebimento</label>
-    <input type="date" id="modal-recebido-data">
-    <div class="btn-row">
-      <button class="btn-cancel" onclick="fecharModalRecebido()">Cancelar</button>
-      <button class="btn-pagar" onclick="confirmarRecebimento()">✅ Confirmar Recebimento</button>
-    </div>
-  </div>
-</div>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
 <script>
-// ── Config Supabase ──
-var SUPABASE_URL = 'https://ibcjuyvaygavvvbyslmt.supabase.co';
-var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2p1eXZheWdhdnZ2YnlzbG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDMzNDIsImV4cCI6MjEwMDgxOTM0Mn0.8ukYMfQ8Ef-prDdtyjV7PCDp8ocih1pacW1Yr6CxnXM';
+(function(){
+  'use strict';
 
-// ── Estado global ──
-var contaEditandoId = null;
-var contaPagandoId = null;
-var recebimentoRecebendoId = null;
-var ordenacaoAscendente = false;
+  const SUPABASE_URL = 'https://ibcjuyvaygavvvbyslmt.supabase.co';
+  const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliY2p1eXZheWdhdnZ2YnlzbG10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNDMzNDIsImV4cCI6MjEwMDgxOTM0Mn0.8ukYMfQ8Ef-prDdtyjV7PCDp8ocih1pacW1Yr6CxnXM';
 
-// ── Helpers ──
-function headersAnon() {
-  return {
-    'apikey': SUPABASE_ANON_KEY,
-    'Content-Type': 'application/json'
-  };
-}
-
-function headersAuth() {
-  var token = sessionStorage.getItem('supabase_token');
-  return {
-    'apikey': SUPABASE_ANON_KEY,
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer ' + (token || '')
-  };
-}
-
-async function supabaseFetch(path, options) {
-  if (!options) options = {};
-  var url = SUPABASE_URL + path;
-  var res = await fetch(url, options);
-  if (!res.ok) {
-    var errorMsg = 'HTTP ' + res.status;
-    try {
-      var errBody = await res.json();
-      errorMsg = errBody.message || errBody.error || errBody.msg || errorMsg;
-      if (errBody.error_description) errorMsg = errBody.error_description;
-    } catch (_) {}
-    throw new Error(errorMsg);
+  function headersAnon() {
+    return {
+      'apikey': ANON_KEY,
+      'Content-Type': 'application/json'
+    };
   }
-  var contentType = res.headers.get('content-type') || '';
-  if (res.status === 204 || !contentType.includes('application/json')) {
-    return null;
-  }
-  return await res.json();
-}
 
-// ── Abas ──
-function mudarAba(aba) {
-  try {
-    document.querySelectorAll('.aba-btn').forEach(function(b) { b.classList.remove('ativo'); });
-    document.querySelectorAll('.aba-content').forEach(function(c) { c.classList.remove('ativo'); });
-    document.querySelector('.aba-btn[data-aba="' + aba + '"]').classList.add('ativo');
-    document.getElementById('aba-' + aba).classList.add('ativo');
-    if (aba === 'receber') {
-      carregarRecebimentos();
-    } else {
-      carregarDados();
-    }
-  } catch (e) {
-    console.error('Exceção em mudarAba:', e);
-  }
-}
-
-// ── Auth ──
-async function login() {
-  try {
-    var email = document.getElementById('email').value;
-    var password = document.getElementById('password').value;
-    var errorEl = document.getElementById('login-error');
-    errorEl.style.display = 'none';
-
-    var body = JSON.stringify({ email: email, password: password });
-    var result = await supabaseFetch('/auth/v1/token?grant_type=password', {
-      method: 'POST',
-      headers: headersAnon(),
-      body: body
-    });
-
-    if (!result.access_token) {
-      throw new Error('Falha na autenticação — token não recebido');
-    }
-
-    sessionStorage.setItem('supabase_token', result.access_token);
-    sessionStorage.setItem('supabase_user_email', result.user && result.user.email ? result.user.email : email);
-
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    document.getElementById('user-email').textContent = result.user && result.user.email ? result.user.email : email;
-
-    var hoje = new Date();
-    document.getElementById('filtro-mes').value = hoje.toISOString().slice(0, 7);
-
-    await carregarDados();
-    await carregarCategorias();
-    await carregarCategoriasEdicao();
-  } catch (e) {
-    var errorEl = document.getElementById('login-error');
-    errorEl.textContent = e.message || 'Erro ao fazer login';
-    errorEl.style.display = 'block';
-    console.error('Exceção no login:', e);
-  }
-}
-
-function logout() {
-  try {
-    sessionStorage.removeItem('supabase_token');
-    sessionStorage.removeItem('supabase_user_email');
-  } catch (e) {
-    console.error('Erro no logout:', e);
-  }
-  document.getElementById('dashboard').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-}
-
-async function checkSession() {
-  try {
+  function headersAuth() {
     var token = sessionStorage.getItem('supabase_token');
-    if (token) {
-      var userData = await supabaseFetch('/auth/v1/user', {
-        method: 'GET',
-        headers: headersAuth()
+    return {
+      'apikey': ANON_KEY,
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    };
+  }
+
+  var sortAsc = false;
+  var currentTab = 'pagamentos';
+
+  // --- TOAST ---
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type + ' show';
+    setTimeout(function(){ t.className = 'toast ' + type; }, 3500);
+  }
+
+  // --- LOGIN ---
+  window.handleLogin = async function(ev) {
+    ev.preventDefault();
+    var email = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+    var btn = document.getElementById('loginBtn');
+    var errDiv = document.getElementById('loginError');
+    errDiv.style.display = 'none';
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Entrando...';
+
+      var resp = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: headersAnon(),
+        body: JSON.stringify({ email: email, password: password })
       });
-      if (userData && userData.id) {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
-        document.getElementById('user-email').textContent = userData.email || sessionStorage.getItem('supabase_user_email') || '';
-        var hoje = new Date();
-        document.getElementById('filtro-mes').value = hoje.toISOString().slice(0, 7);
-        await carregarDados();
-        await carregarCategorias();
-        await carregarCategoriasEdicao();
+
+      if (!resp.ok) {
+        var errData;
+        try { errData = await resp.json(); } catch(e) { errData = {}; }
+        throw new Error(errData.error_description || errData.error || 'Erro ao fazer login (HTTP ' + resp.status + ')');
       }
+
+      var data = await resp.json();
+      sessionStorage.setItem('supabase_token', data.access_token);
+      sessionStorage.setItem('user_email', email);
+      document.getElementById('userEmail').textContent = email;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+
+      carregarPagamentos();
+      carregarRecebimentos();
+    } catch (err) {
+      errDiv.textContent = err.message;
+      errDiv.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Entrar';
     }
-  } catch (e) {
-    console.error('Sessão inválida ou expirada:', e);
+    return false;
+  };
+
+  window.handleLogout = function() {
     sessionStorage.removeItem('supabase_token');
-    sessionStorage.removeItem('supabase_user_email');
+    sessionStorage.removeItem('user_email');
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('dashboard').style.display = 'none';
+    document.getElementById('email').value = '';
+    document.getElementById('password').value = '';
+    document.getElementById('tabRecebimentos').classList.remove('active');
+    document.getElementById('tabPagamentos').classList.add('active');
+    currentTab = 'pagamentos';
+  };
+
+  // --- AUTO LOGIN CHECK ---
+  function checkSession() {
+    var token = sessionStorage.getItem('supabase_token');
+    var email = sessionStorage.getItem('user_email');
+    if (token && email) {
+      document.getElementById('userEmail').textContent = email;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      carregarPagamentos();
+      carregarRecebimentos();
+    }
   }
-}
 
-// ── Filtro: data range vs mês ──
-function aoMudarFiltroMes() {
-  // Quando o usuário seleciona um mês, limpa os filtros de data range
-  try {
-    document.getElementById('filtro-data-de').value = '';
-    document.getElementById('filtro-data-ate').value = '';
-  } catch (_) {}
-  carregarDados();
-}
-
-// ── Ordenação ──
-function toggleOrdenacao() {
-  try {
-    ordenacaoAscendente = !ordenacaoAscendente;
-    document.getElementById('btn-ordem').textContent = ordenacaoAscendente ? 'Data ↑' : 'Data ↓';
-    carregarDados();
-  } catch (e) {
-    console.error('Exceção em toggleOrdenacao:', e);
-  }
-}
-
-// ── Dados (Pagar) ──
-async function carregarDados() {
-  try {
-    document.getElementById('loading-indicator').style.display = 'block';
-    document.getElementById('tabela-contas').style.display = 'none';
-    document.getElementById('tbody-contas').innerHTML = '';
-
-    var ordem = ordenacaoAscendente ? 'data_vencimento.asc' : 'data_vencimento.desc';
-    var path = '/rest/v1/pagamentos?select=*,categorias(nome,cor_hex),fornecedores(nome)&order=' + ordem;
-
-    var status = document.getElementById('filtro-status').value;
-    if (status) {
-      path += '&status=eq.' + encodeURIComponent(status);
-    }
-
-    var mes = document.getElementById('filtro-mes').value;
-    var dataDe = document.getElementById('filtro-data-de').value;
-    var dataAte = document.getElementById('filtro-data-ate').value;
-
-    // Filtro por mês (apenas se data range não estiver preenchido)
-    if (mes && !dataDe && !dataAte) {
-      var inicio = mes + '-01';
-      var partes = mes.split('-');
-      var ano = parseInt(partes[0], 10);
-      var mesNum = parseInt(partes[1], 10);
-      var ultimoDia = new Date(ano, mesNum, 0).getDate();
-      var fim = mes + '-' + String(ultimoDia).padStart(2, '0');
-      path += '&data_vencimento=gte.' + encodeURIComponent(inicio);
-      path += '&data_vencimento=lte.' + encodeURIComponent(fim);
-    }
-
-    // Filtro por data range (De/Até) — alternativa ao mês
-    if (dataDe) {
-      path += '&data_vencimento=gte.' + encodeURIComponent(dataDe);
-    }
-    if (dataAte) {
-      path += '&data_vencimento=lte.' + encodeURIComponent(dataAte);
-    }
-
-    var busca = document.getElementById('filtro-busca').value.trim();
-    if (busca) {
-      path += '&descricao=ilike.' + encodeURIComponent('%' + busca + '%');
-    }
-
-    var data = await supabaseFetch(path, {
-      method: 'GET',
-      headers: headersAuth()
-    });
-
-    var dataArr = Array.isArray(data) ? data : [];
-
-    document.getElementById('tabela-contas').style.display = 'table';
-    var tbody = document.getElementById('tbody-contas');
-    tbody.innerHTML = '';
-
-    if (dataArr.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:30px;">Nenhuma conta encontrada</td></tr>';
-      atualizarCards([]);
-      return;
-    }
-
-    var agruparPor = document.getElementById('filtro-agrupamento').value;
-
-    if (agruparPor === 'categoria' || agruparPor === 'fornecedor') {
-      renderizarAgrupado(tbody, dataArr, agruparPor);
+  // --- TABS ---
+  window.switchTab = function(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
+    if (tab === 'pagamentos') {
+      document.querySelectorAll('.tab-btn')[0].classList.add('active');
+      document.getElementById('tabPagamentos').classList.add('active');
     } else {
-      renderizarNormal(tbody, dataArr);
+      document.querySelectorAll('.tab-btn')[1].classList.add('active');
+      document.getElementById('tabRecebimentos').classList.add('active');
     }
+  };
 
-    atualizarCards(dataArr);
-  } catch (e) {
-    console.error('Exceção em carregarDados:', e);
-    var tbody = document.getElementById('tbody-contas');
-    if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="7" class="error-msg">Erro: ' + e.message + '</td></tr>';
-      document.getElementById('tabela-contas').style.display = 'table';
-    }
-  } finally {
-    var loading = document.getElementById('loading-indicator');
-    if (loading) loading.style.display = 'none';
-  }
-}
+  // --- SORT TOGGLE ---
+  window.toggleSort = function() {
+    sortAsc = !sortAsc;
+    document.getElementById('sortBtn').textContent = sortAsc ? '↓ Data' : '↑ Data';
+    applyFilters();
+  };
 
-function escapeHtmlAttr(str) {
-  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
+  // --- MODALS ---
+  window.abrirModalPagar = function(id) {
+    document.getElementById('pagarId').value = id;
+    document.getElementById('pagarData').value = new Date().toISOString().split('T')[0];
+    document.getElementById('modalPagar').classList.add('active');
+  };
 
-function renderizarNormal(tbody, dataArr) {
-  dataArr.forEach(function(c) {
-    var venc = new Date(c.data_vencimento + 'T12:00:00');
-    var hoje = new Date();
-    var statusReal = (!c.data_pagamento && venc < hoje) ? 'atrasado' : c.status;
-    var cor = c.categorias && c.categorias.cor_hex ? c.categorias.cor_hex : '#888';
-    var catNome = c.categorias && c.categorias.nome ? c.categorias.nome : '—';
-    var fornNome = c.fornecedores && c.fornecedores.nome ? c.fornecedores.nome : '—';
-    var podePagar = statusReal === 'pendente' || statusReal === 'atrasado';
-    var podeEditar = statusReal !== 'pago';
-    var tr = document.createElement('tr');
-    var descExibicao = escapeHtmlAttr(c.descricao);
-    var valorStr = 'R$ ' + Number(c.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2});
-    var dataStr = venc.toLocaleDateString('pt-BR');
-    tr.innerHTML =
-      '<td><strong>' + descExibicao + '</strong></td>' +
-      '<td style="color:#f97316;font-weight:600;">' + valorStr + '</td>' +
-      '<td>' + dataStr + '</td>' +
-      '<td><span style="color:' + cor + '">●</span> ' + catNome + '</td>' +
-      '<td>' + fornNome + '</td>' +
-      '<td><span class="status-badge ' + statusReal + '">' + statusReal + '</span></td>' +
-      '<td>' +
-        (podePagar ? '<button class="btn-acao btn-acao-pagar" onclick="abrirModalPagamento(\'' + c.id + '\')">✅ Pagar</button>' : '<button class="btn-acao btn-acao-pagar" disabled>✅ Pagar</button>') +
-        (podeEditar ? '<button class="btn-acao btn-acao-editar" onclick="editarConta(\'' + c.id + '\')">✏️ Editar</button>' : '<button class="btn-acao btn-acao-editar" disabled>✏️ Editar</button>') +
-      '</td></tr>';
-    tbody.appendChild(tr);
-  });
-}
+  window.abrirModalReceber = function(id) {
+    document.getElementById('receberId').value = id;
+    document.getElementById('receberData').value = new Date().toISOString().split('T')[0];
+    document.getElementById('modalReceber').classList.add('active');
+  };
 
-function renderizarAgrupado(tbody, dataArr, agruparPor) {
-  var grupos = {};
-  dataArr.forEach(function(c) {
-    var chave;
-    if (agruparPor === 'categoria') {
-      chave = c.categorias && c.categorias.nome ? c.categorias.nome : 'Sem categoria';
-    } else {
-      chave = c.fornecedores && c.fornecedores.nome ? c.fornecedores.nome : 'Sem fornecedor';
-    }
-    if (!grupos[chave]) grupos[chave] = [];
-    grupos[chave].push(c);
-  });
+  window.fecharModal = function(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+  };
 
-  var chavesOrdenadas = Object.keys(grupos).sort();
-
-  chavesOrdenadas.forEach(function(chave, idx) {
-    var itens = grupos[chave];
-    var subtotal = 0;
-
-    // Cabeçalho do grupo
-    if (idx > 0) {
-      var spacer = document.createElement('tr');
-      spacer.innerHTML = '<td colspan="7" style="padding:4px;"></td>';
-      tbody.appendChild(spacer);
-    }
-    var headerRow = document.createElement('tr');
-    var icon = agruparPor === 'categoria' ? '📁' : '🏢';
-    headerRow.innerHTML = '<td colspan="7" class="grupo-header">' + icon + ' ' + chave + ' <span style="color:#888;font-weight:400;margin-left:8px;">(' + itens.length + ' conta' + (itens.length !== 1 ? 's' : '') + ')</span></td>';
-    tbody.appendChild(headerRow);
-
-    itens.forEach(function(c) {
-      var venc = new Date(c.data_vencimento + 'T12:00:00');
-      var hoje = new Date();
-      var statusReal = (!c.data_pagamento && venc < hoje) ? 'atrasado' : c.status;
-      var cor = c.categorias && c.categorias.cor_hex ? c.categorias.cor_hex : '#888';
-      var catNome = c.categorias && c.categorias.nome ? c.categorias.nome : '—';
-      var fornNome = c.fornecedores && c.fornecedores.nome ? c.fornecedores.nome : '—';
-      var podePagar = statusReal === 'pendente' || statusReal === 'atrasado';
-      var podeEditar = statusReal !== 'pago';
-      var tr = document.createElement('tr');
-      var descExibicao = escapeHtmlAttr(c.descricao);
-      var valorStr = 'R$ ' + Number(c.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2});
-      var dataStr = venc.toLocaleDateString('pt-BR');
-      tr.innerHTML =
-        '<td><strong>' + descExibicao + '</strong></td>' +
-        '<td style="color:#f97316;font-weight:600;">' + valorStr + '</td>' +
-        '<td>' + dataStr + '</td>' +
-        '<td><span style="color:' + cor + '">●</span> ' + catNome + '</td>' +
-        '<td>' + fornNome + '</td>' +
-        '<td><span class="status-badge ' + statusReal + '">' + statusReal + '</span></td>' +
-        '<td>' +
-          (podePagar ? '<button class="btn-acao btn-acao-pagar" onclick="abrirModalPagamento(\'' + c.id + '\')">✅ Pagar</button>' : '<button class="btn-acao btn-acao-pagar" disabled>✅ Pagar</button>') +
-          (podeEditar ? '<button class="btn-acao btn-acao-editar" onclick="editarConta(\'' + c.id + '\')">✏️ Editar</button>' : '<button class="btn-acao btn-acao-editar" disabled>✏️ Editar</button>') +
-        '</td>';
-      tbody.appendChild(tr);
-      subtotal += Number(c.valor);
+  // CLOSE MODAL ON OVERLAY CLICK
+  document.querySelectorAll('.modal-overlay').forEach(function(el) {
+    el.addEventListener('click', function(ev) {
+      if (ev.target === this) {
+        this.classList.remove('active');
+      }
     });
-
-    // Linha de subtotal
-    var subtotalRow = document.createElement('tr');
-    var subtotalStr = 'R$ ' + subtotal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-    subtotalRow.innerHTML = '<td colspan="7" class="grupo-subtotal">Subtotal ' + chave + ': ' + subtotalStr + '</td>';
-    tbody.appendChild(subtotalRow);
   });
-}
 
-function atualizarCards(data) {
-  if (!Array.isArray(data)) data = [];
-  var pendente = 0, pago = 0, atrasado = 0, total = 0;
-  var hoje = new Date();
-  data.forEach(function(c) {
-    var venc = new Date(c.data_vencimento + 'T12:00:00');
-    var s = (!c.data_pagamento && venc < hoje) ? 'atrasado' : c.status;
-    if (s === 'pendente') pendente += Number(c.valor);
-    else if (s === 'pago') pago += Number(c.valor);
-    else if (s === 'atrasado') atrasado += Number(c.valor);
-    total += Number(c.valor);
-  });
-  document.getElementById('card-pendente').textContent = 'R$ ' + pendente.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-  document.getElementById('card-pago').textContent = 'R$ ' + pago.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-  document.getElementById('card-atrasado').textContent = 'R$ ' + atrasado.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-  document.getElementById('card-total').textContent = 'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-}
-
-// ── CORRIGIDO: marcarComoPago e editarConta ──
-
-// marcarComoPago: PATCH direto no Supabase
-async function marcarComoPago(id, data_pagamento) {
-  try {
-    if (!id || !data_pagamento) {
-      alert('ID da conta e data de pagamento são obrigatórios');
+  // --- CONFIRMAR PAGAR ---
+  window.confirmarPagar = async function() {
+    var id = document.getElementById('pagarId').value;
+    var dataPagamento = document.getElementById('pagarData').value;
+    if (!dataPagamento) {
+      showToast('Selecione a data do pagamento', 'error');
       return;
     }
-    await supabaseFetch('/rest/v1/pagamentos?id=eq.' + id, {
-      method: 'PATCH',
-      headers: headersAuth(),
-      body: JSON.stringify({
-        status: 'pago',
-        data_pagamento: data_pagamento
-      })
-    });
-    await carregarDados();
-  } catch (e) {
-    console.error('Exceção em marcarComoPago:', e);
-    alert('Erro ao marcar como pago: ' + e.message);
-  }
-}
-
-// editarConta: abre modal com dados atuais, ao salvar faz PATCH
-async function editarConta(id) {
-  try {
-    await abrirModalEdicao(id);
-  } catch (e) {
-    console.error('Exceção em editarConta:', e);
-    alert('Erro ao editar conta: ' + e.message);
-  }
-}
-
-// ── Categorias ──
-async function carregarCategorias() {
-  try {
-    var data = await supabaseFetch('/rest/v1/categorias?select=*&order=nome', {
-      method: 'GET',
-      headers: headersAuth()
-    });
-    var sel = document.getElementById('modal-categoria');
-    sel.innerHTML = '<option value="">Selecione...</option>';
-    if (Array.isArray(data)) {
-      data.forEach(function(c) {
-        sel.innerHTML += '<option value="' + c.id + '">' + c.nome + '</option>';
-      });
-    }
-  } catch (e) {
-    console.error('Exceção ao carregar categorias:', e);
-  }
-}
-
-async function carregarCategoriasEdicao() {
-  try {
-    var data = await supabaseFetch('/rest/v1/categorias?select=*&order=nome', {
-      method: 'GET',
-      headers: headersAuth()
-    });
-    var sel = document.getElementById('editar-categoria');
-    sel.innerHTML = '<option value="">Selecione...</option>';
-    if (Array.isArray(data)) {
-      data.forEach(function(c) {
-        sel.innerHTML += '<option value="' + c.id + '">' + c.nome + '</option>';
-      });
-    }
-  } catch (e) {
-    console.error('Exceção ao carregar categorias de edição:', e);
-  }
-}
-
-// ── Modal Nova Conta ──
-function abrirModal() {
-  document.getElementById('modal-title').textContent = 'Nova Conta';
-  document.getElementById('modal-descricao').value = '';
-  document.getElementById('modal-valor').value = '';
-  document.getElementById('modal-vencimento').value = '';
-  document.getElementById('modal-categoria').value = '';
-  document.getElementById('modal-fornecedor').value = '';
-  document.getElementById('modal-obs').value = '';
-  document.getElementById('modal-overlay').classList.add('active');
-}
-
-function fecharModal() {
-  document.getElementById('modal-overlay').classList.remove('active');
-}
-
-async function salvarConta() {
-  try {
-    var descricao = document.getElementById('modal-descricao').value.trim();
-    var valor = parseFloat(document.getElementById('modal-valor').value);
-    var vencimento = document.getElementById('modal-vencimento').value;
-    var categoria_id = document.getElementById('modal-categoria').value || null;
-    var fornecedorNome = document.getElementById('modal-fornecedor').value.trim();
-    var observacao = document.getElementById('modal-obs').value.trim();
-
-    if (!descricao || !valor || !vencimento) {
-      alert('Preencha descrição, valor e vencimento');
-      return;
-    }
-
-    var userId = null;
+    var btn = document.getElementById('btnConfirmarPagar');
     try {
-      var userData = await supabaseFetch('/auth/v1/user', {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Salvando...';
+
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/pagamentos?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: headersAuth(),
+        body: JSON.stringify({ status: 'pago', data_pagamento: dataPagamento })
+      });
+
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao registrar pagamento: ' + errText);
+      }
+
+      showToast('✅ Pagamento registrado com sucesso!', 'success');
+      fecharModal('modalPagar');
+      carregarPagamentos();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Confirmar Pagamento';
+    }
+  };
+
+  // --- CONFIRMAR RECEBER ---
+  window.confirmarReceber = async function() {
+    var id = document.getElementById('receberId').value;
+    var dataRecebimento = document.getElementById('receberData').value;
+    if (!dataRecebimento) {
+      showToast('Selecione a data do recebimento', 'error');
+      return;
+    }
+    var btn = document.getElementById('btnConfirmarReceber');
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Salvando...';
+
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/recebimentos?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: headersAuth(),
+        body: JSON.stringify({ status: 'recebido', data_recebimento: dataRecebimento })
+      });
+
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao registrar recebimento: ' + errText);
+      }
+
+      showToast('✅ Recebimento registrado com sucesso!', 'success');
+      fecharModal('modalReceber');
+      carregarRecebimentos();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Confirmar Recebimento';
+    }
+  };
+
+  // --- ABRIR EDITAR ---
+  window.abrirEditar = async function(id) {
+    var btn = document.getElementById('btnConfirmarEditar');
+    try {
+      document.getElementById('editarId').value = id;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Carregando...';
+      document.getElementById('modalEditar').classList.add('active');
+
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/pagamentos?id=eq.' + encodeURIComponent(id) + '&select=*', {
         method: 'GET',
         headers: headersAuth()
       });
-      userId = userData && userData.id ? userData.id : null;
-    } catch (_) {
-      console.warn('Não foi possível obter user_id');
-    }
 
-    var fornecedor_id = null;
-    if (fornecedorNome) {
-      try {
-        var newForn = await supabaseFetch('/rest/v1/fornecedores?select=id', {
-          method: 'POST',
-          headers: headersAuth(),
-          body: JSON.stringify({ nome: fornecedorNome })
-        });
-        if (newForn && Array.isArray(newForn) && newForn.length > 0) {
-          fornecedor_id = newForn[0].id;
-        }
-      } catch (e) {
-        console.warn('Erro ao criar fornecedor:', e.message);
+      if (!resp.ok) {
+        throw new Error('Erro ao carregar dados (HTTP ' + resp.status + ')');
       }
+
+      var data = await resp.json();
+      if (!data || data.length === 0) {
+        throw new Error('Registro não encontrado');
+      }
+
+      var item = data[0];
+      document.getElementById('editarDescricao').value = item.descricao || '';
+      document.getElementById('editarValor').value = item.valor || '';
+      document.getElementById('editarVencimento').value = item.data_vencimento || '';
+      document.getElementById('editarCategoria').value = (item.categorias && item.categorias.nome) || item.categoria_id || '';
+      document.getElementById('editarFornecedor').value = (item.fornecedores && item.fornecedores.nome) || item.fornecedor_id || '';
+    } catch (err) {
+      showToast(err.message, 'error');
+      fecharModal('modalEditar');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Salvar Alterações';
     }
+  };
 
-    await supabaseFetch('/rest/v1/pagamentos', {
-      method: 'POST',
-      headers: headersAuth(),
-      body: JSON.stringify({
-        user_id: userId,
-        descricao: descricao,
-        valor: valor,
-        data_vencimento: vencimento,
-        categoria_id: categoria_id,
-        fornecedor_id: fornecedor_id,
-        observacao: observacao,
-        status: 'pendente'
-      })
-    });
-
-    fecharModal();
-    await carregarDados();
-  } catch (e) {
-    console.error('Exceção ao salvar conta:', e);
-    alert('Erro ao salvar: ' + e.message);
-  }
-}
-
-// ── Modal Pagamento ──
-function abrirModalPagamento(id) {
-  try {
-    contaPagandoId = id;
-    document.getElementById('pagamento-descricao').textContent = 'Conta #' + id;
-    document.getElementById('modal-pagamento-data').value = new Date().toISOString().slice(0, 10);
-    document.getElementById('modal-pagamento-overlay').classList.add('active');
-  } catch (e) {
-    console.error('Exceção em abrirModalPagamento:', e);
-  }
-}
-
-function fecharModalPagamento() {
-  document.getElementById('modal-pagamento-overlay').classList.remove('active');
-  contaPagandoId = null;
-}
-
-async function confirmarPagamento() {
-  try {
-    var id = contaPagandoId;
-    var dataPagamento = document.getElementById('modal-pagamento-data').value;
-    if (!id || !dataPagamento) {
-      alert('Selecione a data de pagamento');
-      return;
-    }
-    // PATCH direto — CORRIGIDO: envia data_pagamento e status
-    await supabaseFetch('/rest/v1/pagamentos?id=eq.' + id, {
-      method: 'PATCH',
-      headers: headersAuth(),
-      body: JSON.stringify({
-        status: 'pago',
-        data_pagamento: dataPagamento
-      })
-    });
-    fecharModalPagamento();
-    await carregarDados();
-  } catch (e) {
-    console.error('Exceção em confirmarPagamento:', e);
-    alert('Erro ao confirmar pagamento: ' + e.message);
-  }
-}
-
-// ── Modal Edição ──
-async function abrirModalEdicao(id) {
-  try {
-    var data = await supabaseFetch('/rest/v1/pagamentos?id=eq.' + id + '&select=*', {
-      method: 'GET',
-      headers: headersAuth()
-    });
-    var conta = Array.isArray(data) && data.length > 0 ? data[0] : null;
-    if (!conta) {
-      alert('Conta não encontrada');
-      return;
-    }
-    contaEditandoId = id;
-    document.getElementById('editar-descricao').value = conta.descricao || '';
-    document.getElementById('editar-valor').value = conta.valor || '';
-    document.getElementById('editar-vencimento').value = conta.data_vencimento || '';
-    document.getElementById('editar-categoria').value = conta.categoria_id || '';
-    document.getElementById('editar-obs').value = conta.observacao || '';
-    document.getElementById('modal-edicao-overlay').classList.add('active');
-  } catch (e) {
-    console.error('Exceção em abrirModalEdicao:', e);
-    alert('Erro ao carregar dados da conta: ' + e.message);
-  }
-}
-
-function fecharModalEdicao() {
-  document.getElementById('modal-edicao-overlay').classList.remove('active');
-  contaEditandoId = null;
-}
-
-async function salvarEdicao() {
-  try {
-    var id = contaEditandoId;
-    var descricao = document.getElementById('editar-descricao').value.trim();
-    var valor = parseFloat(document.getElementById('editar-valor').value);
-    var vencimento = document.getElementById('editar-vencimento').value;
-    var categoria_id = document.getElementById('editar-categoria').value || null;
-    var observacao = document.getElementById('editar-obs').value.trim();
+  // --- CONFIRMAR EDITAR ---
+  window.confirmarEditar = async function() {
+    var id = document.getElementById('editarId').value;
+    var descricao = document.getElementById('editarDescricao').value.trim();
+    var valor = document.getElementById('editarValor').value;
+    var vencimento = document.getElementById('editarVencimento').value;
 
     if (!descricao || !valor || !vencimento) {
-      alert('Preencha descrição, valor e vencimento');
+      showToast('Preencha todos os campos obrigatórios', 'error');
       return;
     }
 
-    await supabaseFetch('/rest/v1/pagamentos?id=eq.' + id, {
-      method: 'PATCH',
-      headers: headersAuth(),
-      body: JSON.stringify({
+    var btn = document.getElementById('btnConfirmarEditar');
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Salvando...';
+
+      var body = {
         descricao: descricao,
-        valor: valor,
-        data_vencimento: vencimento,
-        categoria_id: categoria_id,
-        observacao: observacao
-      })
-    });
+        valor: parseFloat(valor),
+        data_vencimento: vencimento
+      };
 
-    fecharModalEdicao();
-    await carregarDados();
-  } catch (e) {
-    console.error('Exceção em salvarEdicao:', e);
-    alert('Erro ao salvar alterações: ' + e.message);
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/pagamentos?id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: headersAuth(),
+        body: JSON.stringify(body)
+      });
+
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao salvar alterações: ' + errText);
+      }
+
+      showToast('✅ Alterações salvas com sucesso!', 'success');
+      fecharModal('modalEditar');
+      carregarPagamentos();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Salvar Alterações';
+    }
+  };
+
+  // --- CARREGAR PAGAMENTOS ---
+  async function carregarPagamentos() {
+    var tbody = document.getElementById('pagamentosBody');
+    try {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><p><span class="loading-spinner"></span> Carregando...</p></td></tr>';
+
+      var orderDir = sortAsc ? 'asc' : 'desc';
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/pagamentos?select=*,categorias(nome,cor_hex),fornecedores(nome)&order=data_vencimento.' + orderDir, {
+        method: 'GET',
+        headers: headersAuth()
+      });
+
+      if (!resp.ok) throw new Error('Erro ao carregar pagamentos');
+
+      var data = await resp.json();
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><p>Nenhum pagamento encontrado</p><span>Adicione registros no Supabase para vê-los aqui.</span></td></tr>';
+        return;
+      }
+
+      var filtered = aplicarFiltros(data);
+      renderPagamentos(filtered, tbody);
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><p>Erro ao carregar dados</p><span>' + err.message + '</span></td></tr>';
+    }
   }
-}
 
-// ════════════════════════════════════════
-// ── RECEBIMENTOS ──
-// ════════════════════════════════════════
+  function renderPagamentos(data, tbody) {
+    var grupo = document.getElementById('filterGrupo').value;
 
-async function carregarRecebimentos() {
-  var container = document.getElementById('tabela-recebimentos-container');
-  var spinner = document.getElementById('loading-indicator-receber');
-
-  try {
-    if (spinner) spinner.style.display = 'block';
-    container.innerHTML = '';
-
-    var data = await supabaseFetch('/rest/v1/recebimentos?select=*&order=data_vencimento.desc', {
-      method: 'GET',
-      headers: headersAuth()
-    });
-
-    var dataArr = Array.isArray(data) ? data : [];
-
-    if (dataArr.length === 0) {
-      container.innerHTML =
-        '<div class="table-info">' +
-          '<span class="icon">📄</span>' +
-          '<div class="title">Nenhum recebimento encontrado</div>' +
-          '<p>Clique em "+ Novo Recebimento" para adicionar.</p>' +
-        '</div>';
-      atualizarCardsReceber([]);
+    if (grupo === 'categoria') {
+      renderAgrupado(data, tbody, 'categoria');
+      return;
+    }
+    if (grupo === 'fornecedor') {
+      renderAgrupado(data, tbody, 'fornecedor');
       return;
     }
 
-    var html = '<table id="tabela-recebimentos"><thead><tr><th>Nº Nota</th><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Ações</th></tr></thead><tbody>';
-    dataArr.forEach(function(r) {
-      var venc = new Date(r.data_vencimento + 'T12:00:00');
-      var hoje = new Date();
-      // CORRIGIDO: usa 'pendente' em vez de 'a_receber' — compatível com CHECK constraint
-      var statusReal = (!r.data_recebimento && venc < hoje) ? 'vencido' : (r.status || 'pendente');
-      var podeReceber = statusReal === 'pendente' || statusReal === 'vencido';
-      var descExibicao = escapeHtmlAttr(r.descricao || '—');
-      var notaExibicao = escapeHtmlAttr(r.numero_nota || '—');
-      var valorStr = 'R$ ' + Number(r.valor).toLocaleString('pt-BR', {minimumFractionDigits: 2});
-      var dataStr = venc.toLocaleDateString('pt-BR');
-      var statusLabel = statusReal === 'pendente' ? 'A Receber' : (statusReal === 'vencido' ? 'Vencido' : 'Recebido');
+    var html = '';
+    for (var i = 0; i < data.length; i++) {
+      html += renderPagamentoRow(data[i]);
+    }
+    tbody.innerHTML = html;
+  }
 
-      html += '<tr>';
-      html += '<td><strong>' + notaExibicao + '</strong></td>';
-      html += '<td>' + descExibicao + '</td>';
-      html += '<td style="color:#f97316;font-weight:600;">' + valorStr + '</td>';
-      html += '<td>' + dataStr + '</td>';
-      html += '<td><span class="status-badge ' + statusReal + '">' + statusLabel + '</span></td>';
-      html += '<td>';
-      if (podeReceber) {
-        html += '<button class="btn-acao btn-acao-receber" onclick="abrirModalRecebido(\'' + r.id + '\')">✅ Recebido</button>';
+  function renderAgrupado(data, tbody, tipo) {
+    var grupos = {};
+    for (var i = 0; i < data.length; i++) {
+      var chave;
+      if (tipo === 'categoria') {
+        chave = (data[i].categorias && data[i].categorias.nome) || 'Sem Categoria';
       } else {
-        html += '<button class="btn-acao btn-acao-receber" disabled>✅ Recebido</button>';
+        chave = (data[i].fornecedores && data[i].fornecedores.nome) || 'Sem Fornecedor';
       }
-      html += '</td></tr>';
-    });
-    html += '</tbody></table>';
-    container.innerHTML = html;
-    atualizarCardsReceber(dataArr);
-  } catch (e) {
-    console.error('Exceção em carregarRecebimentos:', e);
-    var msgErro = e.message || '';
-    if (msgErro.toLowerCase().indexOf('relation') !== -1 ||
-        msgErro.toLowerCase().indexOf('does not exist') !== -1 ||
-        msgErro.toLowerCase().indexOf('not exist') !== -1 ||
-        msgErro.toLowerCase().indexOf('404') !== -1 ||
-        msgErro.toLowerCase().indexOf('not found') !== -1 ||
-        msgErro.toLowerCase().indexOf('recebimento') !== -1) {
-      container.innerHTML =
-        '<div class="table-info">' +
-          '<span class="icon">🛠️</span>' +
-          '<div class="title">Tabela de recebimentos ainda não criada</div>' +
-          '<p>Rode o SQL no Supabase para criar a tabela <strong>recebimentos</strong>.</p>' +
-          '<p style="font-size:13px;color:#666;margin-top:8px;">Detalhe: ' + msgErro + '</p>' +
-        '</div>';
-    } else {
-      container.innerHTML = '<div class="table-info"><span class="icon">❌</span><div class="title">Erro ao carregar recebimentos</div><p>' + msgErro + '</p></div>';
+      if (!grupos[chave]) grupos[chave] = [];
+      grupos[chave].push(data[i]);
     }
-    atualizarCardsReceber([]);
-  } finally {
-    if (spinner) spinner.style.display = 'none';
+
+    var html = '';
+    var keys = Object.keys(grupos);
+    for (var j = 0; j < keys.length; j++) {
+      var k = keys[j];
+      html += '<tr style="background:#1e1e36"><td colspan="7" style="font-weight:700;color:#f97316;padding:10px 16px;font-size:13px">📁 ' + k + ' (' + grupos[k].length + ')</td></tr>';
+      for (var l = 0; l < grupos[k].length; l++) {
+        html += renderPagamentoRow(grupos[k][l]);
+      }
+    }
+    tbody.innerHTML = html;
   }
-}
 
-function atualizarCardsReceber(data) {
-  if (!Array.isArray(data)) data = [];
-  var aReceber = 0, recebidoMes = 0, vencido = 0, total = 0;
-  var hoje = new Date();
-  var mesAtual = hoje.getMonth();
-  var anoAtual = hoje.getFullYear();
-  data.forEach(function(r) {
-    var venc = new Date(r.data_vencimento + 'T12:00:00');
-    // CORRIGIDO: usa 'pendente' em vez de 'a_receber'
-    var statusReal = (!r.data_recebimento && venc < hoje) ? 'vencido' : (r.status || 'pendente');
-    total += Number(r.valor);
-    if (statusReal === 'pendente') {
-      aReceber += Number(r.valor);
-    } else if (statusReal === 'recebido') {
-      if (r.data_recebimento) {
-        var dataRec = new Date(r.data_recebimento + 'T12:00:00');
-        if (dataRec.getMonth() === mesAtual && dataRec.getFullYear() === anoAtual) {
-          recebidoMes += Number(r.valor);
-        }
-      }
-    } else if (statusReal === 'vencido') {
-      vencido += Number(r.valor);
+  function renderPagamentoRow(item) {
+    var catNome = (item.categorias && item.categorias.nome) || '-';
+    var catCor = (item.categorias && item.categorias.cor_hex) || '#8888aa';
+    var fornNome = (item.fornecedores && item.fornecedores.nome) || '-';
+    var status = item.status || 'pendente';
+    var statusLabel = status === 'pago' ? 'Pago' : 'Pendente';
+    var statusClass = status === 'pago' ? 'status-pago' : 'status-pendente';
+    var venc = item.data_vencimento ? formatDate(item.data_vencimento) : '-';
+    var valor = item.valor !== null && item.valor !== undefined ? formatMoney(item.valor) : '-';
+
+    var acoes = '';
+    if (status === 'pendente') {
+      acoes += '<button class="action-btn pagar" onclick="abrirModalPagar(\'' + item.id + '\')">✅ Pagar</button>';
     }
-  });
-  document.getElementById('card-a-receber').textContent = 'R$ ' + aReceber.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-  document.getElementById('card-recebido-mes').textContent = 'R$ ' + recebidoMes.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-  document.getElementById('card-vencido').textContent = 'R$ ' + vencido.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-  document.getElementById('card-total-receber').textContent = 'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-}
+    acoes += '<button class="action-btn editar" onclick="abrirEditar(\'' + item.id + '\')">✏️ Editar</button>';
 
-// ── Modal Novo Recebimento ──
-function abrirModalNovoRecebimento() {
-  document.getElementById('rec-numero-nota').value = '';
-  document.getElementById('rec-descricao').value = '';
-  document.getElementById('rec-valor').value = '';
-  document.getElementById('rec-vencimento').value = '';
-  document.getElementById('modal-recebimento-overlay').classList.add('active');
-}
+    return '<tr>' +
+      '<td>' + escHtml(item.descricao || '-') + '</td>' +
+      '<td class="valor">' + valor + '</td>' +
+      '<td>' + venc + '</td>' +
+      '<td><span style="color:' + catCor + '">' + escHtml(catNome) + '</span></td>' +
+      '<td>' + escHtml(fornNome) + '</td>' +
+      '<td><span class="status-badge ' + statusClass + '">' + statusLabel + '</span></td>' +
+      '<td>' + acoes + '</td>' +
+      '</tr>';
+  }
 
-function fecharModalNovoRecebimento() {
-  document.getElementById('modal-recebimento-overlay').classList.remove('active');
-}
-
-async function salvarRecebimento() {
-  try {
-    var numero_nota = document.getElementById('rec-numero-nota').value.trim();
-    var descricao = document.getElementById('rec-descricao').value.trim();
-    var valor = parseFloat(document.getElementById('rec-valor').value);
-    var data_vencimento = document.getElementById('rec-vencimento').value;
-
-    if (!numero_nota || !descricao || !valor || !data_vencimento) {
-      alert('Preencha número da nota, descrição, valor e vencimento');
-      return;
-    }
-
-    var userId = null;
+  // --- CARREGAR RECEBIMENTOS ---
+  async function carregarRecebimentos() {
+    var tbody = document.getElementById('recebimentosBody');
     try {
-      var userData = await supabaseFetch('/auth/v1/user', {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><p><span class="loading-spinner"></span> Carregando...</p></td></tr>';
+
+      var orderDir = sortAsc ? 'asc' : 'desc';
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/recebimentos?select=*&order=data_vencimento.' + orderDir, {
         method: 'GET',
         headers: headersAuth()
       });
-      userId = userData && userData.id ? userData.id : null;
-    } catch (_) {
-      console.warn('Não foi possível obter user_id');
+
+      if (!resp.ok) throw new Error('Erro ao carregar recebimentos');
+
+      var data = await resp.json();
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><p>Nenhum recebimento encontrado</p><span>Adicione registros no Supabase para vê-los aqui.</span></td></tr>';
+        return;
+      }
+
+      var filtered = aplicarFiltros(data);
+      renderRecebimentos(filtered, tbody);
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><p>Erro ao carregar dados</p><span>' + err.message + '</span></td></tr>';
+    }
+  }
+
+  function renderRecebimentos(data, tbody) {
+    var html = '';
+    for (var i = 0; i < data.length; i++) {
+      html += renderRecebimentoRow(data[i]);
+    }
+    tbody.innerHTML = html;
+  }
+
+  function renderRecebimentoRow(item) {
+    var status = item.status || 'pendente';
+    var statusLabel = status === 'recebido' ? 'Recebido' : 'Pendente';
+    var statusClass = status === 'recebido' ? 'status-recebido' : 'status-pendente';
+    var venc = item.data_vencimento ? formatDate(item.data_vencimento) : '-';
+    var valor = item.valor !== null && item.valor !== undefined ? formatMoney(item.valor) : '-';
+
+    var acoes = '';
+    if (status === 'pendente') {
+      acoes += '<button class="action-btn receber" onclick="abrirModalReceber(\'' + item.id + '\')">✅ Receber</button>';
     }
 
-    // CORRIGIDO: status='pendente' em vez de 'a_receber'
-    // O CHECK constraint no Supabase só aceita: pendente, recebido, atrasado, cancelado
-    await supabaseFetch('/rest/v1/recebimentos', {
-      method: 'POST',
-      headers: headersAuth(),
-      body: JSON.stringify({
-        user_id: userId,
-        numero_nota: numero_nota,
-        descricao: descricao,
-        valor: valor,
-        data_vencimento: data_vencimento,
-        cliente: 'Sacyr',
-        status: 'pendente'
-      })
+    return '<tr>' +
+      '<td>' + escHtml(item.numero_nota || '-') + '</td>' +
+      '<td>' + escHtml(item.descricao || '-') + '</td>' +
+      '<td class="valor">' + valor + '</td>' +
+      '<td>' + venc + '</td>' +
+      '<td><span class="status-badge ' + statusClass + '">' + statusLabel + '</span></td>' +
+      '<td>' + acoes + '</td>' +
+      '</tr>';
+  }
+
+  // --- FILTROS ---
+  function aplicarFiltros(data) {
+    var statusF = document.getElementById('filterStatus').value;
+    var mesF = document.getElementById('filterMes').value;
+    var dataDe = document.getElementById('filterDataDe').value;
+    var dataAte = document.getElementById('filterDataAte').value;
+    var busca = document.getElementById('filterBusca').value.toLowerCase().trim();
+
+    return data.filter(function(item) {
+      // Status
+      if (statusF && item.status !== statusF) return false;
+
+      // Mês
+      if (mesF && item.data_vencimento) {
+        var itemMes = item.data_vencimento.substring(0, 7);
+        if (itemMes !== mesF) return false;
+      }
+
+      // Data De
+      if (dataDe && item.data_vencimento) {
+        if (item.data_vencimento < dataDe) return false;
+      }
+
+      // Data Até
+      if (dataAte && item.data_vencimento) {
+        if (item.data_vencimento > dataAte) return false;
+      }
+
+      // Busca
+      if (busca) {
+        var desc = (item.descricao || '').toLowerCase();
+        if (desc.indexOf(busca) === -1) return false;
+      }
+
+      return true;
     });
-
-    fecharModalNovoRecebimento();
-    await carregarRecebimentos();
-  } catch (e) {
-    console.error('Exceção ao salvar recebimento:', e);
-    alert('Erro ao salvar recebimento: ' + e.message);
   }
-}
 
-// ── Modal Confirmar Recebimento ──
-function abrirModalRecebido(id) {
-  try {
-    recebimentoRecebendoId = id;
-    document.getElementById('recebido-descricao').textContent = 'Recebimento #' + id;
-    document.getElementById('modal-recebido-data').value = new Date().toISOString().slice(0, 10);
-    document.getElementById('modal-recebido-overlay').classList.add('active');
-  } catch (e) {
-    console.error('Exceção em abrirModalRecebido:', e);
-  }
-}
-
-function fecharModalRecebido() {
-  document.getElementById('modal-recebido-overlay').classList.remove('active');
-  recebimentoRecebendoId = null;
-}
-
-async function confirmarRecebimento() {
-  try {
-    var id = recebimentoRecebendoId;
-    var dataRecebimento = document.getElementById('modal-recebido-data').value;
-    if (!id || !dataRecebimento) {
-      alert('Selecione a data de recebimento');
-      return;
+  window.applyFilters = function() {
+    if (currentTab === 'pagamentos') {
+      carregarPagamentos();
+    } else {
+      carregarRecebimentos();
     }
-    await supabaseFetch('/rest/v1/recebimentos?id=eq.' + id, {
-      method: 'PATCH',
-      headers: headersAuth(),
-      body: JSON.stringify({
-        status: 'recebido',
-        data_recebimento: dataRecebimento
-      })
-    });
-    fecharModalRecebido();
-    await carregarRecebimentos();
-  } catch (e) {
-    console.error('Exceção em confirmarRecebimento:', e);
-    alert('Erro ao confirmar recebimento: ' + e.message);
-  }
-}
+  };
 
-// ── Init ──
-checkSession();
-document.getElementById('password').addEventListener('keydown', function(e) { if (e.key === 'Enter') login(); });
+  // --- HELPERS ---
+  function formatMoney(val) {
+    return 'R$ ' + parseFloat(val).toFixed(2).replace('.', ',');
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    var parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
+  }
+
+  function escHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // --- INIT ---
+  document.addEventListener('DOMContentLoaded', checkSession);
+
+})();
 </script>
 </body>
 </html>
