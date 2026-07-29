@@ -63,6 +63,10 @@ tr:last-child td{border-bottom:none}
 .action-btn.editar:hover{background:#3b82f6;color:#fff}
 .action-btn.receber{background:#22c55e22;color:#22c55e;border:1px solid #22c55e44}
 .action-btn.receber:hover{background:#22c55e;color:#fff}
+.action-btn.excluir{background:#ff444422;color:#ff4444;border:1px solid #ff444444}
+.action-btn.excluir:hover{background:#ff4444;color:#fff}
+.btn-primary{padding:10px 24px;background:#f97316;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;transition:background 0.2s}
+.btn-primary:hover{background:#e06600}
 .valor{font-family:'Consolas','Courier New',monospace;font-weight:600;color:#f97316}
 .valor-positivo{color:#22c55e}
 .empty-state{text-align:center;padding:60px 20px;color:#555577}
@@ -156,6 +160,7 @@ tr:last-child td{border-bottom:none}
 
   <!-- TAB PAGAMENTOS -->
   <div id="tabPagamentos" class="tab-content active">
+    <div style="margin-bottom:12px"><button class="btn-primary" onclick="abrirModalNovaConta()">+ NOVA CONTA</button></div>
     <div class="table-container">
       <table>
         <thead>
@@ -178,6 +183,7 @@ tr:last-child td{border-bottom:none}
 
   <!-- TAB RECEBIMENTOS -->
   <div id="tabRecebimentos" class="tab-content">
+    <div style="margin-bottom:12px"><button class="btn-primary" onclick="abrirModalNovoRecebimento()">+ NOVO RECEBIMENTO</button></div>
     <div class="table-container">
       <table>
         <thead>
@@ -279,6 +285,80 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- MODAL NOVA CONTA -->
+<div class="modal-overlay" id="modalNovaConta">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Nova Conta</h2>
+      <button class="close-btn" onclick="fecharModal('modalNovaConta')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="novaContaHidden">
+      <div class="form-group">
+        <label for="novaContaDescricao">Descrição</label>
+        <input type="text" id="novaContaDescricao" required>
+      </div>
+      <div class="form-group">
+        <label for="novaContaValor">Valor (R$)</label>
+        <input type="number" id="novaContaValor" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label for="novaContaCategoria">Categoria</label>
+        <input type="text" id="novaContaCategoria" placeholder="Nome da categoria">
+      </div>
+      <div class="form-group">
+        <label for="novaContaFornecedor">Fornecedor</label>
+        <input type="text" id="novaContaFornecedor" placeholder="Nome do fornecedor">
+      </div>
+      <div class="form-group">
+        <label for="novaContaObservacao">Observação</label>
+        <textarea id="novaContaObservacao" placeholder="Observações..."></textarea>
+      </div>
+      <div class="form-group">
+        <label for="novaContaVencimento">Data de Vencimento</label>
+        <input type="date" id="novaContaVencimento" required>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModal('modalNovaConta')">Cancelar</button>
+      <button class="btn-confirmar" id="btnConfirmarNovaConta" onclick="salvarNovaConta()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO RECEBIMENTO -->
+<div class="modal-overlay" id="modalNovoRecebimento">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Novo Recebimento</h2>
+      <button class="close-btn" onclick="fecharModal('modalNovoRecebimento')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="novoRecebimentoHidden">
+      <div class="form-group">
+        <label for="novoRecebimentoNumeroNota">Nº Nota</label>
+        <input type="text" id="novoRecebimentoNumeroNota" placeholder="Número da nota fiscal">
+      </div>
+      <div class="form-group">
+        <label for="novoRecebimentoDescricao">Descrição</label>
+        <input type="text" id="novoRecebimentoDescricao" required>
+      </div>
+      <div class="form-group">
+        <label for="novoRecebimentoValor">Valor (R$)</label>
+        <input type="number" id="novoRecebimentoValor" step="0.01" required>
+      </div>
+      <div class="form-group">
+        <label for="novoRecebimentoDataVencimento">Data de Vencimento</label>
+        <input type="date" id="novoRecebimentoDataVencimento" required>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModal('modalNovoRecebimento')">Cancelar</button>
+      <button class="btn-confirmar" id="btnConfirmarNovoRecebimento" onclick="salvarNovoRecebimento()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -344,6 +424,7 @@ tr:last-child td{border-bottom:none}
       var data = await resp.json();
       sessionStorage.setItem('supabase_token', data.access_token);
       sessionStorage.setItem('user_email', email);
+      if (data.user && data.user.id) sessionStorage.setItem('user_id', data.user.id);
       document.getElementById('userEmail').textContent = email;
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('dashboard').style.display = 'block';
@@ -674,6 +755,7 @@ tr:last-child td{border-bottom:none}
       acoes += '<button class="action-btn pagar" onclick="abrirModalPagar(\'' + item.id + '\')">✅ Pagar</button>';
     }
     acoes += '<button class="action-btn editar" onclick="abrirEditar(\'' + item.id + '\')">✏️ Editar</button>';
+    acoes += '<button class="action-btn excluir" onclick="excluirPagamento(\'' + item.id + '\')">🗑️</button>';
 
     return '<tr>' +
       '<td>' + escHtml(item.descricao || '-') + '</td>' +
@@ -732,6 +814,7 @@ tr:last-child td{border-bottom:none}
     if (status === 'pendente') {
       acoes += '<button class="action-btn receber" onclick="abrirModalReceber(\'' + item.id + '\')">✅ Receber</button>';
     }
+    acoes += '<button class="action-btn excluir" onclick="excluirRecebimento(\'' + item.id + '\')">🗑️</button>';
 
     return '<tr>' +
       '<td>' + escHtml(item.numero_nota || '-') + '</td>' +
@@ -810,6 +893,175 @@ tr:last-child td{border-bottom:none}
 
   // --- INIT ---
   document.addEventListener('DOMContentLoaded', checkSession);
+
+  // --- ABRIR MODAL NOVA CONTA ---
+  window.abrirModalNovaConta = function() {
+    document.getElementById('novaContaDescricao').value = '';
+    document.getElementById('novaContaValor').value = '';
+    document.getElementById('novaContaCategoria').value = '';
+    document.getElementById('novaContaFornecedor').value = '';
+    document.getElementById('novaContaObservacao').value = '';
+    document.getElementById('novaContaVencimento').value = new Date().toISOString().split('T')[0];
+    document.getElementById('modalNovaConta').classList.add('active');
+  };
+
+  // --- ABRIR MODAL NOVO RECEBIMENTO ---
+  window.abrirModalNovoRecebimento = function() {
+    document.getElementById('novoRecebimentoNumeroNota').value = '';
+    document.getElementById('novoRecebimentoDescricao').value = '';
+    document.getElementById('novoRecebimentoValor').value = '';
+    document.getElementById('novoRecebimentoDataVencimento').value = new Date().toISOString().split('T')[0];
+    document.getElementById('modalNovoRecebimento').classList.add('active');
+  };
+
+  // --- SALVAR NOVA CONTA ---
+  window.salvarNovaConta = async function() {
+    var descricao = document.getElementById('novaContaDescricao').value.trim();
+    var valor = document.getElementById('novaContaValor').value;
+    var vencimento = document.getElementById('novaContaVencimento').value;
+    var categoria = document.getElementById('novaContaCategoria').value.trim();
+    var fornecedor = document.getElementById('novaContaFornecedor').value.trim();
+    var observacao = document.getElementById('novaContaObservacao').value.trim();
+    var userId = sessionStorage.getItem('user_id');
+
+    if (!descricao || !valor || !vencimento) {
+      showToast('Preencha descrição, valor e vencimento', 'error');
+      return;
+    }
+
+    var btn = document.getElementById('btnConfirmarNovaConta');
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Salvando...';
+
+      var body = {
+        descricao: descricao,
+        valor: parseFloat(valor),
+        data_vencimento: vencimento,
+        status: 'pendente',
+        observacao: observacao
+      };
+      if (categoria) body.categoria_id = categoria;
+      if (fornecedor) body.fornecedor_id = fornecedor;
+      if (userId) body.user_id = userId;
+
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/pagamentos', {
+        method: 'POST',
+        headers: headersAuth(),
+        body: JSON.stringify(body)
+      });
+
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao criar conta: ' + errText);
+      }
+
+      showToast('✅ Conta criada com sucesso!', 'success');
+      fecharModal('modalNovaConta');
+      carregarPagamentos();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Salvar';
+    }
+  };
+
+  // --- SALVAR NOVO RECEBIMENTO ---
+  window.salvarNovoRecebimento = async function() {
+    var numero_nota = document.getElementById('novoRecebimentoNumeroNota').value.trim();
+    var descricao = document.getElementById('novoRecebimentoDescricao').value.trim();
+    var valor = document.getElementById('novoRecebimentoValor').value;
+    var data_vencimento = document.getElementById('novoRecebimentoDataVencimento').value;
+
+    if (!descricao || !valor || !data_vencimento) {
+      showToast('Preencha descrição, valor e vencimento', 'error');
+      return;
+    }
+
+    var btn = document.getElementById('btnConfirmarNovoRecebimento');
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Salvando...';
+
+      var body = {
+        numero_nota: numero_nota,
+        descricao: descricao,
+        valor: parseFloat(valor),
+        data_vencimento: data_vencimento,
+        cliente: 'Sacyr',
+        status: 'pendente'
+      };
+
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/recebimentos', {
+        method: 'POST',
+        headers: headersAuth(),
+        body: JSON.stringify(body)
+      });
+
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao criar recebimento: ' + errText);
+      }
+
+      showToast('✅ Recebimento criado com sucesso!', 'success');
+      fecharModal('modalNovoRecebimento');
+      carregarRecebimentos();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Salvar';
+    }
+  };
+
+  // --- EXCLUIR PAGAMENTO ---
+  window.excluirPagamento = async function(id) {
+    if (!confirm('Tem certeza que deseja excluir esta conta?')) return;
+
+    try {
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/pagamentos?id=eq.' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: headersAuth()
+      });
+
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao excluir: ' + errText);
+      }
+
+      showToast('✅ Conta excluída com sucesso!', 'success');
+      carregarPagamentos();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  // --- EXCLUIR RECEBIMENTO ---
+  window.excluirRecebimento = async function(id) {
+    if (!confirm('Tem certeza que deseja excluir este recebimento?')) return;
+
+    try {
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/recebimentos?id=eq.' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: headersAuth()
+      });
+
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao excluir: ' + errText);
+      }
+
+      showToast('✅ Recebimento excluído com sucesso!', 'success');
+      carregarRecebimentos();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
 
 })();
 </script>
