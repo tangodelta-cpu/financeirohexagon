@@ -106,7 +106,34 @@ tr:last-child td{border-bottom:none}
 .toast.error{background:#f85149;color:#fff}
 .toast.info{background:#58a6ff;color:#fff}
 /* RESPONSIVE */
-@media(max-width:768px){header{padding:12px 16px;flex-direction:column;gap:8px}.filters{padding:12px 16px;flex-direction:column;align-items:stretch}.tab-btn{padding:12px 16px;font-size:13px}.tab-content{padding:16px}th,td{padding:8px 10px;font-size:12px}.modal{width:95%}}
+@media(max-width:768px){
+  header{padding:12px 16px;flex-direction:row;flex-wrap:wrap;gap:6px}
+  header h1{font-size:16px}
+  header .user-info{flex-wrap:wrap;gap:6px;justify-content:flex-end}
+  header .user-info span{font-size:12px}
+  header .header-date{font-size:11px;padding:2px 8px}
+  header .btn-logout{padding:4px 12px;font-size:11px}
+  .cards{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .card{padding:12px}
+  .card h3{font-size:10px}
+  .card-value{font-size:18px}
+  .filters{padding:10px 12px;flex-direction:row;flex-wrap:wrap;gap:6px}
+  .filters select,.filters input{font-size:11px;padding:6px 8px;flex:1;min-width:80px}
+  .filters label{font-size:10px}
+  .filters .btn-filter,.filters .sort-btn{padding:6px 10px;font-size:11px}
+  .filters .sort-btn{flex:0}
+  .tab-btn{padding:10px 12px;font-size:11px}
+  .tab-content{padding:12px}
+  th,td{padding:6px 8px;font-size:11px}
+  .action-btn{padding:4px 8px;font-size:10px}
+  .modal{width:95%;margin:10px}
+  .modal-body{padding:16px}
+  .modal-body input,.modal-body select,.modal-body textarea{font-size:13px;padding:8px 10px}
+  .btn-primary{padding:8px 16px;font-size:12px}
+  .fluxo-periodos button{padding:6px 12px;font-size:11px}
+  table{font-size:11px}
+  .status-badge{font-size:10px;padding:2px 6px}
+}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
 .card{background:#161b22;border-radius:12px;padding:20px;border:1px solid #21262d;border-left:4px solid #58a6ff}
 .card h3{font-size:12px;color:#8b949e;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
@@ -960,6 +987,7 @@ input[type="color"]{width:48px;height:38px;padding:2px;background:#0d1117;border
 
   // --- CARREGAR PAGAMENTOS ---
   async function carregarPagamentos() {
+    restaurarFiltros();
     var tbody = document.getElementById('pagamentosBody');
     try {
       tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><p><span class="loading-spinner"></span> Carregando...</p></td></tr>';
@@ -1225,7 +1253,53 @@ input[type="color"]{width:48px;height:38px;padding:2px;background:#0d1117;border
     });
   }
 
+  // --- SALVAR / RESTAURAR FILTROS ---
+  function salvarFiltros() {
+    var filtros = {
+      status: document.getElementById('filterStatus').value,
+      mes: document.getElementById('filterMes').value,
+      dataDe: document.getElementById('filterDataDe').value,
+      dataAte: document.getElementById('filterDataAte').value,
+      busca: document.getElementById('filterBusca').value,
+      grupo: document.getElementById('filterGrupo').value,
+      ordenacao: sortAsc ? 'asc' : 'desc'
+    };
+    sessionStorage.setItem('hex_filtros', JSON.stringify(filtros));
+  }
+
+  function restaurarFiltros() {
+    var saved = sessionStorage.getItem('hex_filtros');
+    if (saved) {
+      var f = JSON.parse(saved);
+      var elStatus = document.getElementById('filterStatus');
+      var elMes = document.getElementById('filterMes');
+      var elDe = document.getElementById('filterDataDe');
+      var elAte = document.getElementById('filterDataAte');
+      var elBusca = document.getElementById('filterBusca');
+      var elGrupo = document.getElementById('filterGrupo');
+      if (elStatus && f.status) elStatus.value = f.status;
+      if (elMes && f.mes) elMes.value = f.mes;
+      if (elDe && f.dataDe) elDe.value = f.dataDe;
+      if (elAte && f.dataAte) elAte.value = f.dataAte;
+      if (elBusca && f.busca) elBusca.value = f.busca;
+      if (elGrupo && f.grupo) elGrupo.value = f.grupo;
+      if (f.ordenacao === 'asc' !== sortAsc) window.toggleSort();
+    } else {
+      // Primeiro acesso: mostra próximos 7 dias
+      var hoje = new Date();
+      var seteDias = new Date(hoje.getTime() + 7 * 24 * 60 * 60 * 1000);
+      var hojeStr = hoje.toISOString().split('T')[0];
+      var seteStr = seteDias.toISOString().split('T')[0];
+      var elDe = document.getElementById('filterDataDe');
+      var elAte = document.getElementById('filterDataAte');
+      if (elDe) elDe.value = hojeStr;
+      if (elAte) elAte.value = seteStr;
+      salvarFiltros();
+    }
+  }
+
   window.applyFilters = function() {
+    salvarFiltros();
     if (currentTab === 'pagamentos') {
       carregarPagamentos();
     } else {
