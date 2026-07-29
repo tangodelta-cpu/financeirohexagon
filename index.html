@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Hexagon Finance - Dashboard</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -110,6 +115,26 @@ tr:last-child td{border-bottom:none}
 .card.card-pago{border-left-color:#22c55e}
 .card.card-atrasado{border-left-color:#f85149}
 .card.card-total{border-left-color:#58a6ff}
+.card.card-saldo-atual{border-left-color:#58a6ff}
+.card.card-entradas{border-left-color:#22c55e}
+.card.card-saidas{border-left-color:#f85149}
+.card.card-saldo-projetado{border-left-color:#58a6ff}
+.fluxo-positivo{color:#22c55e}
+.fluxo-negativo{color:#f85149}
+.fluxo-periodos{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.fluxo-periodos button{padding:8px 20px;background:#0d1117;border:1px solid #30363d;color:#8b949e;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s}
+.fluxo-periodos button:hover{border-color:#58a6ff;color:#c9d1d9}
+.fluxo-periodos button.active{background:#58a6ff22;border-color:#58a6ff;color:#58a6ff}
+/* CONFIG SUB-TABS */
+.config-sub-tabs{display:flex;gap:0;margin-bottom:20px;background:#0d1117;border-radius:8px;border:1px solid #21262d;overflow:hidden}
+.config-sub-tab{padding:10px 24px;background:transparent;border:none;color:#8b949e;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;flex:1;text-align:center}
+.config-sub-tab:hover{color:#c9d1d9;background:#1c2128}
+.config-sub-tab.active{color:#58a6ff;background:#58a6ff11}
+.config-actions{margin-bottom:16px}
+.config-table td,.config-table th{padding:10px 14px}
+.color-dot{display:inline-block;width:16px;height:16px;border-radius:50%;vertical-align:middle;margin-right:8px;border:1px solid #30363d}
+.categoria-color-preview{display:inline-block;width:20px;height:20px;border-radius:6px;vertical-align:middle;margin-left:8px;border:1px solid #30363d}
+input[type="color"]{width:48px;height:38px;padding:2px;background:#0d1117;border:1px solid #30363d;border-radius:6px;cursor:pointer;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -147,6 +172,8 @@ tr:last-child td{border-bottom:none}
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('pagamentos')">📋 Contas a Pagar</button>
     <button class="tab-btn" onclick="switchTab('recebimentos')">💰 Recebimentos</button>
+    <button class="tab-btn" onclick="switchTab('fluxo')">📊 Fluxo de Caixa</button>
+    <button class="tab-btn" onclick="switchTab('config')">⚙️ Configurações</button>
   </div>
 
   <!-- FILTERS -->
@@ -223,6 +250,83 @@ tr:last-child td{border-bottom:none}
         </tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- TAB CONFIGURACOES -->
+<div id="tabConfig" class="tab-content">
+  <div class="config-sub-tabs">
+    <button class="config-sub-tab active" onclick="switchConfigSubTab('categorias', this)">📁 Categorias</button>
+    <button class="config-sub-tab" onclick="switchConfigSubTab('fornecedores', this)">🏢 Fornecedores</button>
+  </div>
+
+  <!-- SUB-ABA CATEGORIAS -->
+  <div id="configCategorias">
+    <div class="config-actions">
+      <button class="btn-primary" onclick="abrirModalCategoria()">+ Nova Categoria</button>
+    </div>
+    <div class="table-container">
+      <table class="config-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Cor</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="categoriasBody">
+          <tr><td colspan="3" class="empty-state"><p>Carregando...</p></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SUB-ABA FORNECEDORES -->
+  <div id="configFornecedores" style="display:none">
+    <div class="config-actions">
+      <button class="btn-primary" onclick="abrirModalFornecedor()">+ Novo Fornecedor</button>
+    </div>
+    <div class="table-container">
+      <table class="config-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="fornecedoresBody">
+          <tr><td colspan="2" class="empty-state"><p>Carregando...</p></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div id="tabFluxo" class="tab-content">
+  <div class="cards" id="cardsFluxo">
+    <div class="card card-saldo-atual"><h3>Saldo Atual</h3><div class="card-value" id="cardSaldoAtual">R$ 0,00</div></div>
+    <div class="card card-entradas"><h3>Entradas (30d)</h3><div class="card-value" id="cardEntradas30d">R$ 0,00</div></div>
+    <div class="card card-saidas"><h3>Saídas (30d)</h3><div class="card-value" id="cardSaidas30d">R$ 0,00</div></div>
+    <div class="card card-saldo-projetado"><h3>Saldo Projetado</h3><div class="card-value" id="cardSaldoProjetado">R$ 0,00</div></div>
+  </div>
+  <div class="fluxo-periodos">
+    <button class="active" onclick="alterarPeriodoFluxo(30, this)">30 dias</button>
+    <button onclick="alterarPeriodoFluxo(60, this)">60 dias</button>
+    <button onclick="alterarPeriodoFluxo(90, this)">90 dias</button>
+  </div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Entradas</th>
+          <th>Saídas</th>
+          <th>Saldo</th>
+        </tr>
+      </thead>
+      <tbody id="fluxoBody">
+        <tr><td colspan="4" class="empty-state"><p>Carregando...</p></td></tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -385,6 +489,56 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- MODAL CATEGORIA -->
+<div class="modal-overlay" id="modalCategoria">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalCategoriaTitle">Nova Categoria</h2>
+      <button class="close-btn" onclick="fecharModal('modalCategoria')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="categoriaId">
+      <div class="form-group">
+        <label for="categoriaNome">Nome da Categoria</label>
+        <input type="text" id="categoriaNome" placeholder="Ex: Aluguel, Energia..." required>
+      </div>
+      <div class="form-group">
+        <label for="categoriaCor">Cor</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="color" id="categoriaCor" value="#58a6ff">
+          <span class="categoria-color-preview" id="categoriaCorPreview" style="background:#58a6ff"></span>
+          <span style="color:#8b949e;font-size:12px" id="categoriaCorHex">#58a6ff</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModal('modalCategoria')">Cancelar</button>
+      <button class="btn-confirmar" id="btnConfirmarCategoria" onclick="salvarCategoria()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FORNECEDOR -->
+<div class="modal-overlay" id="modalFornecedor">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalFornecedorTitle">Novo Fornecedor</h2>
+      <button class="close-btn" onclick="fecharModal('modalFornecedor')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="fornecedorId">
+      <div class="form-group">
+        <label for="fornecedorNome">Nome do Fornecedor</label>
+        <input type="text" id="fornecedorNome" placeholder="Ex: CEMIG, Copasa..." required>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModal('modalFornecedor')">Cancelar</button>
+      <button class="btn-confirmar" id="btnConfirmarFornecedor" onclick="salvarFornecedor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -458,6 +612,9 @@ tr:last-child td{border-bottom:none}
 
       carregarPagamentos();
       carregarRecebimentos();
+      carregarFluxo();
+      carregarCategorias();
+      carregarFornecedores();
     } catch (err) {
       errDiv.textContent = err.message;
       errDiv.style.display = 'block';
@@ -500,11 +657,14 @@ tr:last-child td{border-bottom:none}
         document.getElementById('dashboard').style.display = 'block';
               updateHeaderDate();
               carregarPagamentos();
-              carregarRecebimentos();
-        return;
-      }
-      
-      // Token expirado — tenta renovar com refresh_token
+                            carregarRecebimentos();
+                            carregarFluxo();
+                            carregarCategorias();
+                            carregarFornecedores();
+                      return;
+                    }
+
+                    // Token expirado — tenta renovar com refresh_token
       var refreshToken = sessionStorage.getItem('supabase_refresh_token');
       if (refreshToken) {
         var refreshResp = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
@@ -524,6 +684,9 @@ tr:last-child td{border-bottom:none}
                 updateHeaderDate();
                 carregarPagamentos();
                 carregarRecebimentos();
+                carregarFluxo();
+                carregarCategorias();
+                carregarFornecedores();
           return;
         }
       }
@@ -562,14 +725,28 @@ tr:last-child td{border-bottom:none}
   // --- TABS ---
   window.switchTab = function(tab) {
     currentTab = tab;
+    // Hide filters area for config tab
+    var filtersArea = document.getElementById('filtersArea');
+    if (filtersArea) {
+      filtersArea.style.display = (tab === 'config') ? 'none' : '';
+    }
     document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
     document.querySelectorAll('.tab-content').forEach(function(c){ c.classList.remove('active'); });
     if (tab === 'pagamentos') {
       document.querySelectorAll('.tab-btn')[0].classList.add('active');
       document.getElementById('tabPagamentos').classList.add('active');
-    } else {
+    } else if (tab === 'recebimentos') {
       document.querySelectorAll('.tab-btn')[1].classList.add('active');
       document.getElementById('tabRecebimentos').classList.add('active');
+    } else if (tab === 'fluxo') {
+      document.querySelectorAll('.tab-btn')[2].classList.add('active');
+      document.getElementById('tabFluxo').classList.add('active');
+      carregarFluxo();
+    } else if (tab === 'config') {
+      document.querySelectorAll('.tab-btn')[3].classList.add('active');
+      document.getElementById('tabConfig').classList.add('active');
+      carregarCategorias();
+      carregarFornecedores();
     }
   };
 
@@ -1269,6 +1446,423 @@ tr:last-child td{border-bottom:none}
       showToast(err.message, 'error');
     }
   };
+
+  // --- FLUXO DE CAIXA ---
+  var fluxoPeriodo = 30;
+
+  window.alterarPeriodoFluxo = function(dias, btn) {
+    fluxoPeriodo = dias;
+    document.querySelectorAll('.fluxo-periodos button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    carregarFluxo();
+  };
+
+  async function carregarFluxo() {
+    var tbody = document.getElementById('fluxoBody');
+    try {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><p><span class="loading-spinner"></span> Calculando fluxo de caixa...</p></td></tr>';
+
+      // Buscar pagamentos pendentes
+      var respPag = await fetch(SUPABASE_URL + '/rest/v1/pagamentos?select=*&status=eq.pendente', {
+        method: 'GET',
+        headers: headersAuth()
+      });
+      if (!respPag.ok) throw new Error('Erro ao carregar pagamentos');
+      var pagamentos = await respPag.json();
+      if (!Array.isArray(pagamentos)) pagamentos = [];
+
+      // Buscar recebimentos pendentes
+      var respRec = await fetch(SUPABASE_URL + '/rest/v1/recebimentos?select=*&status=eq.pendente', {
+        method: 'GET',
+        headers: headersAuth()
+      });
+      if (!respRec.ok) throw new Error('Erro ao carregar recebimentos');
+      var recebimentos = await respRec.json();
+      if (!Array.isArray(recebimentos)) recebimentos = [];
+
+      // Calcular data de hoje e data limite
+      var hoje = new Date();
+      hoje.setHours(0,0,0,0);
+      var dataLimite = new Date(hoje);
+      dataLimite.setDate(dataLimite.getDate() + fluxoPeriodo);
+      var hojeStr = hoje.toISOString().split('T')[0];
+      var limiteStr = dataLimite.toISOString().split('T')[0];
+
+      // Mapa diário: { '2025-01-15': { entradas: 0, saidas: 0 } }
+      var mapa = {};
+      for (var d = new Date(hoje); d <= dataLimite; d.setDate(d.getDate() + 1)) {
+        var key = d.toISOString().split('T')[0];
+        mapa[key] = { entradas: 0, saidas: 0 };
+      }
+
+      // Somar recebimentos (entradas) no mapa
+      for (var i = 0; i < recebimentos.length; i++) {
+        var item = recebimentos[i];
+        var dataVen = item.data_vencimento;
+        if (dataVen && dataVen >= hojeStr && dataVen <= limiteStr) {
+          if (mapa[dataVen] !== undefined) {
+            mapa[dataVen].entradas += parseFloat(item.valor) || 0;
+          }
+        }
+      }
+
+      // Somar pagamentos (saídas) no mapa
+      for (var j = 0; j < pagamentos.length; j++) {
+        var item2 = pagamentos[j];
+        var dataVen2 = item2.data_vencimento;
+        if (dataVen2 && dataVen2 >= hojeStr && dataVen2 <= limiteStr) {
+          if (mapa[dataVen2] !== undefined) {
+            mapa[dataVen2].saidas += parseFloat(item2.valor) || 0;
+          }
+        }
+      }
+
+      // Calcular totais
+      var totalEntradas = 0, totalSaidas = 0;
+      var keys = Object.keys(mapa).sort();
+      var saldoCorrente = 0;
+
+      // Renderizar tabela
+      var html = '';
+      for (var k = 0; k < keys.length; k++) {
+        var dia = keys[k];
+        var ent = mapa[dia].entradas;
+        var sai = mapa[dia].saidas;
+        totalEntradas += ent;
+        totalSaidas += sai;
+        var saldoDia = ent - sai;
+        saldoCorrente += saldoDia;
+
+        var entClass = ent > 0 ? 'valor-positivo' : '';
+        var saiClass = sai > 0 ? 'fluxo-negativo' : '';
+        var saldoClass = saldoCorrente >= 0 ? 'valor-positivo' : 'fluxo-negativo';
+        var formatEnt = ent > 0 ? formatMoney(ent) : '-';
+        var formatSai = sai > 0 ? formatMoney(sai) : '-';
+
+        html += '<tr>' +
+          '<td>' + formatDate(dia) + '</td>' +
+          '<td class="valor ' + entClass + '">' + formatEnt + '</td>' +
+          '<td class="valor ' + saiClass + '">' + formatSai + '</td>' +
+          '<td class="valor ' + saldoClass + '">' + formatMoney(saldoCorrente) + '</td>' +
+          '</tr>';
+      }
+
+      if (html === '') {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><p>Nenhum fluxo projetado para o período</p></td></tr>';
+      } else {
+        tbody.innerHTML = html;
+      }
+
+      // Atualizar cards
+      var saldoProjetado = totalEntradas - totalSaidas;
+      document.getElementById('cardSaldoAtual').textContent = 'R$ 0,00';
+      document.getElementById('cardEntradas30d').textContent = formatMoney(totalEntradas);
+      document.getElementById('cardSaidas30d').textContent = formatMoney(totalSaidas);
+      document.getElementById('cardSaldoProjetado').textContent = formatMoney(saldoProjetado);
+      document.getElementById('cardSaldoProjetado').style.color = saldoProjetado >= 0 ? '#22c55e' : '#f85149';
+
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><p>Erro ao calcular fluxo</p><span>' + err.message + '</span></td></tr>';
+    }
+  }
+
+  // --- CONFIG: SWITCH SUB-TAB ---
+  window.switchConfigSubTab = function(subtab, btn) {
+    document.querySelectorAll('.config-sub-tab').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.getElementById('configCategorias').style.display = (subtab === 'categorias') ? '' : 'none';
+    document.getElementById('configFornecedores').style.display = (subtab === 'fornecedores') ? '' : 'none';
+    if (subtab === 'categorias') carregarCategorias();
+    else carregarFornecedores();
+  };
+
+  // --- COLOR PICKER LIVE PREVIEW ---
+  function initColorPicker() {
+    var input = document.getElementById('categoriaCor');
+    if (!input) return;
+    input.addEventListener('input', function() {
+      var preview = document.getElementById('categoriaCorPreview');
+      var hex = document.getElementById('categoriaCorHex');
+      if (preview) preview.style.background = this.value;
+      if (hex) hex.textContent = this.value;
+    });
+  }
+
+  // --- CONFIG: CARREGAR CATEGORIAS ---
+  async function carregarCategorias() {
+    var tbody = document.getElementById('categoriasBody');
+    if (!tbody) return;
+    try {
+      tbody.innerHTML = '<tr><td colspan="3" class="empty-state"><p><span class="loading-spinner"></span> Carregando...</p></td></tr>';
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/categorias?select=*&order=nome', {
+        method: 'GET',
+        headers: headersAuth()
+      });
+      if (!resp.ok) throw new Error('Erro ao carregar categorias');
+      var data = await resp.json();
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="empty-state"><p>Nenhuma categoria cadastrada</p><span>Clique em "+ Nova Categoria" para adicionar.</span></td></tr>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < data.length; i++) {
+        var c = data[i];
+        var cor = c.cor_hex || '#58a6ff';
+        html += '<tr>' +
+                  '<td><span class="color-dot" style="background:' + cor + '"></span>' + escHtml(c.nome) + '</td>' +
+                  '<td><span style="font-family:monospace;color:#8b949e;font-size:13px">' + cor + '</span></td>' +
+                  '<td>' +
+                    '<button class="action-btn editar" onclick="abrirModalCategoria(' + "'" + c.id + "'" + ')">✏️ Editar</button>' +
+                    '<button class="action-btn excluir" onclick="excluirCategoria(' + "'" + c.id + "'" + ')">🗑️</button>' +
+                  '</td>' +
+                  '</tr>';
+      }
+      tbody.innerHTML = html;
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="3" class="empty-state"><p>Erro ao carregar categorias</p><span>' + escHtml(err.message) + '</span></td></tr>';
+    }
+  }
+
+  // --- CONFIG: CARREGAR FORNECEDORES ---
+  async function carregarFornecedores() {
+    var tbody = document.getElementById('fornecedoresBody');
+    if (!tbody) return;
+    try {
+      tbody.innerHTML = '<tr><td colspan="2" class="empty-state"><p><span class="loading-spinner"></span> Carregando...</p></td></tr>';
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/fornecedores?select=*&order=nome', {
+        method: 'GET',
+        headers: headersAuth()
+      });
+      if (!resp.ok) throw new Error('Erro ao carregar fornecedores');
+      var data = await resp.json();
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" class="empty-state"><p>Nenhum fornecedor cadastrado</p><span>Clique em "+ Novo Fornecedor" para adicionar.</span></td></tr>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < data.length; i++) {
+        var f = data[i];
+        html += '<tr>' +
+                  '<td>' + escHtml(f.nome) + '</td>' +
+                  '<td>' +
+                    '<button class="action-btn editar" onclick="abrirModalFornecedor(' + "'" + f.id + "'" + ')">✏️ Editar</button>' +
+                    '<button class="action-btn excluir" onclick="excluirFornecedor(' + "'" + f.id + "'" + ')">🗑️</button>' +
+                  '</td>' +
+                  '</tr>';
+      }
+      tbody.innerHTML = html;
+    } catch (err) {
+      tbody.innerHTML = '<tr><td colspan="2" class="empty-state"><p>Erro ao carregar fornecedores</p><span>' + escHtml(err.message) + '</span></td></tr>';
+    }
+  }
+
+  // --- CONFIG: ABRIR MODAL CATEGORIA (add/edit) ---
+  window.abrirModalCategoria = function(id) {
+    var title = document.getElementById('modalCategoriaTitle');
+    var nomeInput = document.getElementById('categoriaNome');
+    var corInput = document.getElementById('categoriaCor');
+    var idInput = document.getElementById('categoriaId');
+    if (!id) {
+      // Novo
+      title.textContent = 'Nova Categoria';
+      nomeInput.value = '';
+      corInput.value = '#58a6ff';
+      idInput.value = '';
+      var preview = document.getElementById('categoriaCorPreview');
+      var hex = document.getElementById('categoriaCorHex');
+      if (preview) preview.style.background = '#58a6ff';
+      if (hex) hex.textContent = '#58a6ff';
+    } else {
+      // Editar — carrega dados
+      title.textContent = 'Editar Categoria';
+      idInput.value = id;
+      (async function() {
+        try {
+          var resp = await fetch(SUPABASE_URL + '/rest/v1/categorias?id=eq.' + encodeURIComponent(id) + '&select=*', {
+            method: 'GET',
+            headers: headersAuth()
+          });
+          if (!resp.ok) throw new Error('Erro ao carregar categoria');
+          var data = await resp.json();
+          if (!data || data.length === 0) throw new Error('Categoria não encontrada');
+          var c = data[0];
+          nomeInput.value = c.nome || '';
+          var cor = c.cor_hex || '#58a6ff';
+          corInput.value = cor;
+          var preview = document.getElementById('categoriaCorPreview');
+          var hex = document.getElementById('categoriaCorHex');
+          if (preview) preview.style.background = cor;
+          if (hex) hex.textContent = cor;
+        } catch (err) {
+          showToast(err.message, 'error');
+          fecharModal('modalCategoria');
+        }
+      })();
+    }
+    document.getElementById('modalCategoria').classList.add('active');
+  };
+
+  // --- CONFIG: SALVAR CATEGORIA ---
+  window.salvarCategoria = async function() {
+    var nome = document.getElementById('categoriaNome').value.trim();
+    var cor = document.getElementById('categoriaCor').value;
+    var id = document.getElementById('categoriaId').value;
+    if (!nome) {
+      showToast('Digite o nome da categoria', 'error');
+      return;
+    }
+    var btn = document.getElementById('btnConfirmarCategoria');
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Salvando...';
+      var body = { nome: nome, cor_hex: cor };
+      var url = SUPABASE_URL + '/rest/v1/categorias';
+      var method = 'POST';
+      if (id) {
+        url += '?id=eq.' + encodeURIComponent(id);
+        method = 'PATCH';
+      }
+      var resp = await fetch(url, {
+        method: method,
+        headers: headersAuth(),
+        body: JSON.stringify(body)
+      });
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao salvar categoria: ' + errText);
+      }
+      showToast(id ? '✅ Categoria atualizada!' : '✅ Categoria criada!', 'success');
+      fecharModal('modalCategoria');
+      carregarCategorias();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Salvar';
+    }
+  };
+
+  // --- CONFIG: EXCLUIR CATEGORIA ---
+  window.excluirCategoria = async function(id) {
+    if (!confirm('Tem certeza que deseja excluir esta categoria?')) return;
+    try {
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/categorias?id=eq.' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: headersAuth()
+      });
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao excluir: ' + errText);
+      }
+      showToast('✅ Categoria excluída!', 'success');
+      carregarCategorias();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  // --- CONFIG: ABRIR MODAL FORNECEDOR (add/edit) ---
+  window.abrirModalFornecedor = function(id) {
+    var title = document.getElementById('modalFornecedorTitle');
+    var nomeInput = document.getElementById('fornecedorNome');
+    var idInput = document.getElementById('fornecedorId');
+    if (!id) {
+      title.textContent = 'Novo Fornecedor';
+      nomeInput.value = '';
+      idInput.value = '';
+    } else {
+      title.textContent = 'Editar Fornecedor';
+      idInput.value = id;
+      (async function() {
+        try {
+          var resp = await fetch(SUPABASE_URL + '/rest/v1/fornecedores?id=eq.' + encodeURIComponent(id) + '&select=*', {
+            method: 'GET',
+            headers: headersAuth()
+          });
+          if (!resp.ok) throw new Error('Erro ao carregar fornecedor');
+          var data = await resp.json();
+          if (!data || data.length === 0) throw new Error('Fornecedor não encontrado');
+          nomeInput.value = data[0].nome || '';
+        } catch (err) {
+          showToast(err.message, 'error');
+          fecharModal('modalFornecedor');
+        }
+      })();
+    }
+    document.getElementById('modalFornecedor').classList.add('active');
+  };
+
+  // --- CONFIG: SALVAR FORNECEDOR ---
+  window.salvarFornecedor = async function() {
+    var nome = document.getElementById('fornecedorNome').value.trim();
+    var id = document.getElementById('fornecedorId').value;
+    if (!nome) {
+      showToast('Digite o nome do fornecedor', 'error');
+      return;
+    }
+    var btn = document.getElementById('btnConfirmarFornecedor');
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading-spinner"></span>Salvando...';
+      var body = { nome: nome };
+      var url = SUPABASE_URL + '/rest/v1/fornecedores';
+      var method = 'POST';
+      if (id) {
+        url += '?id=eq.' + encodeURIComponent(id);
+        method = 'PATCH';
+      }
+      var resp = await fetch(url, {
+        method: method,
+        headers: headersAuth(),
+        body: JSON.stringify(body)
+      });
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao salvar fornecedor: ' + errText);
+      }
+      showToast(id ? '✅ Fornecedor atualizado!' : '✅ Fornecedor criado!', 'success');
+      fecharModal('modalFornecedor');
+      carregarFornecedores();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Salvar';
+    }
+  };
+
+  // --- CONFIG: EXCLUIR FORNECEDOR ---
+  window.excluirFornecedor = async function(id) {
+    if (!confirm('Tem certeza que deseja excluir este fornecedor?')) return;
+    try {
+      var resp = await fetch(SUPABASE_URL + '/rest/v1/fornecedores?id=eq.' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: headersAuth()
+      });
+      if (!resp.ok) {
+        var errText;
+        try { errText = await resp.text(); } catch(e) { errText = 'Erro desconhecido'; }
+        throw new Error('Erro ao excluir: ' + errText);
+      }
+      showToast('✅ Fornecedor excluído!', 'success');
+      carregarFornecedores();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  // --- INIT: color picker + load categorias on login ---
+  document.addEventListener('DOMContentLoaded', function() {
+    initColorPicker();
+  });
+
+// PWA: registra service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
 
 })();
 </script>
